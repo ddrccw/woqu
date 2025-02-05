@@ -97,36 +97,59 @@ public class ZshShell: ShellProtocol {
         let process = Process()
         let outputPipe = Pipe()
         let errorPipe = Pipe()
-        let semaphore = DispatchSemaphore(value: 0)
 
         process.executableURL = URL(fileURLWithPath: "/bin/zsh")
         process.arguments = ["-c", command]
         process.standardOutput = outputPipe
         process.standardError = errorPipe
 
+        // 使用原子队列保护共享变量
+        let queue = DispatchQueue(label: "com.woqu.syncQueue")
         var output = ""
         var errorOutput = ""
         var exitCode: Int32 = 0
+        let timeout: TimeInterval = 30
+        var timedOut = false
 
         do {
             try process.run()
 
-            // Process completed normally
-            let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
-            let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
-            output = String(data: outputData, encoding: .utf8) ?? ""
-            errorOutput = String(data: errorData, encoding: .utf8) ?? ""
-//            exitCode = process.terminationStatus
+            // 使用 weak 避免循环引用
+            let timeoutWorkItem = DispatchWorkItem { [weak process, weak queue] in
+                queue?.sync {
+                    if let isRunning = process?.isRunning, isRunning {
+                        timedOut = true
+                        process?.terminate()
+                    }
+                }
+            }
 
+            // 在全局队列安排超时
+            DispatchQueue.global().asyncAfter(deadline: .now() + timeout, execute: timeoutWorkItem)
+
+            process.waitUntilExit()
+            timeoutWorkItem.cancel() // 如果进程提前完成，取消超时任务
+
+            queue.sync {
+                if timedOut {
+                    errorOutput = "Command timed out after \(timeout) seconds"
+                    exitCode = -1
+                } else {
+                    let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
+                    let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
+                    output = String(data: outputData, encoding: .utf8) ?? ""
+                    errorOutput = String(data: errorData, encoding: .utf8) ?? ""
+                    exitCode = process.terminationStatus
+                }
+            }
         } catch {
             print("Failed to execute Zsh command: \(error)")
             errorOutput = error.localizedDescription
+            exitCode = process.terminationStatus
         }
 
-        return CommandResult(
-            output: output,
-            errorOutput: errorOutput,
-            exitCode: errorOutput.isEmpty ? 0: -1
-        )
+        return CommandResult(output: output,
+                             errorOutput: errorOutput,
+                             exitCode: exitCode)
     }
 }
