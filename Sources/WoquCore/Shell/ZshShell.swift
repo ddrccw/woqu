@@ -32,31 +32,37 @@ public class ZshShell: ShellProtocol {
         return (timestamp, command)
     }
 
-    public func getCommandHistory() -> [CommandHistory] {
+    public func getCommandHistory(_ command: String?) -> [CommandHistory] {
         // Read history file directly for more accurate timestamps
         do {
-            // Try UTF-8 first
-            var historyContent: String
-            if let utf8Content = try? String(contentsOfFile: historyFilePath, encoding: .utf8) {
-                historyContent = utf8Content
+            let allCommands: [(Date, String)]
+            if let command = command {
+                allCommands = [
+                    (Date.now, command)
+                ]
             } else {
-                // Fall back to latin1 if UTF-8 fails
-                historyContent = try String(contentsOfFile: historyFilePath, encoding: .isoLatin1)
+                // Try UTF-8 first
+                var historyContent: String
+                if let utf8Content = try? String(contentsOfFile: historyFilePath, encoding: .utf8) {
+                    historyContent = utf8Content
+                } else {
+                    // Fall back to latin1 if UTF-8 fails
+                    historyContent = try String(contentsOfFile: historyFilePath, encoding: .isoLatin1)
+                }
+                // Get all woqu commands from history in original order
+                let allCommandHistory = historyContent.components(separatedBy: "\n")
+                allCommands = allCommandHistory
+                    .compactMap { line in
+                        guard let (timestamp, command) = parseHistoryLine(line),
+                            command.contains("woqu") == false else {
+                            // print("history cmd invalid line: \(line)")
+                            return nil
+                        }
+
+                        // print("history cmd valid line: \(line)")
+                        return (timestamp, command)
+                    }.suffix(10)
             }
-            // Get all woqu commands from history in original order
-            let allCommandHistory = historyContent.components(separatedBy: "\n")
-            let allCommands: [(Date, String)] = allCommandHistory
-                .compactMap { line in
-                    guard let (timestamp, command) = parseHistoryLine(line),
-                          command.contains("woqu") == false else {
-                        // print("history cmd invalid line: \(line)")
-                        return nil
-                    }
-
-                    // print("history cmd valid line: \(line)")
-                    return (timestamp, command)
-                }.suffix(10)
-
             // Take up to 10 most recent commands while maintaining original order
             let recentCommands = Array(allCommands)
             var historyEntries: [CommandHistory] = []

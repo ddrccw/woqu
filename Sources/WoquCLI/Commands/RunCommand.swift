@@ -13,8 +13,14 @@ public struct RunCommand: AsyncParsableCommand {
         """
     )
 
-    @Option(name: .shortAndLong, help: "The provider to use (deepseek, openai, anthropic)")
+    @Option(name: .shortAndLong, help: "The provider to use (openai, deepseek, siliconflow)")
     var provider: ConfigManager.ProviderType?
+
+    @Option(name: .shortAndLong, help: "The command to execute")
+    var command: String?
+
+    @Option(name: .shortAndLong, help: "Dry run mode")
+    var dryRun: Bool = true
 
     public init() {}
 
@@ -27,7 +33,6 @@ public struct RunCommand: AsyncParsableCommand {
 
         let woqu = await Woqu()
 
-        // Initialize with provider configuration
-        await woqu.run(provider: provider)
+        await woqu.run(command, provider: provider, dryRun: dryRun)
     }
 }

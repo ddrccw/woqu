@@ -13,8 +13,9 @@ public struct ConfigManager: Sendable {
 
     public enum ProviderType: String, Codable, Sendable {
         case openai = "openai"
-        case anthropic = "anthropic"
         case deepseek = "deepseek"
+        case siliconflow = "siliconflow"
+        case alibaba = "alibaba"
     }
 
     /// Configuration structure supporting multiple AI providers

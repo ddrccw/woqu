@@ -37,7 +37,9 @@ final public class Woqu {
     public init() {
     }
 
-    public func run(provider: ConfigManager.ProviderType? = nil) async {
+    public func run(_ command: String?,
+                    provider: ConfigManager.ProviderType? = nil,
+                    dryRun: Bool) async {
         do {
             // 1. 加载配置
             let config = try configManager.loadConfig()
@@ -68,7 +70,7 @@ final public class Woqu {
             )
 
             // 3. 获取历史命令
-            let history = getCommandHistory()
+            let history = getCommandHistory(command)
 
             // 4. 调用OpenAI API获取建议
             let suggestion: CommandSuggestion = try await getCommandSuggestionWithRetry(history: history)
@@ -79,22 +81,23 @@ final public class Woqu {
             \(suggestion.explanation)
             """)
 
+            // 6. 询问用户是否执行
             for (index, command) in suggestion.commands.enumerated() {
                 print("""
                 Command \(index + 1):
                 \(command.command)
                 Description: \(command.description)
                 """)
+
+                if !dryRun {
+                    print("Execute commands? (y/n)")
+                    if let input = readLine(), input.lowercased() == "y" {
+                        let result = executeCommand(command.command)
+                        print(result)
+                    }
+                }
             }
 
-            // 6. 询问用户是否执行
-            print("Execute commands? (y/n)")
-//            if let input = readLine(), input.lowercased() == "y" {
-                for command in suggestion.commands {
-                    let result = executeCommand(command.command)
-                    print(result)
-                }
-//            }
 
         } catch ConfigManager.ConfigError.configFileNotFound {
             print("Error: Configuration file not found. Please run 'woqu setup' to configure.")
@@ -163,6 +166,8 @@ final public class Woqu {
 
                 return suggestion
             } catch {
+                print("getCommandSuggestionWithRetry: \(error)")
+
                 if attempt < maxRetries {
                     print("Retrying in 1 second... (attempt \(attempt)/\(maxRetries))")
                     try await Task.sleep(nanoseconds: retryDelay)
@@ -180,9 +185,9 @@ final public class Woqu {
         return true
     }
 
-    private func getCommandHistory() -> [CommandHistory] {
+    private func getCommandHistory(_ command: String?) -> [CommandHistory] {
         let shell = ShellFactory.createShell()
-        return shell.getCommandHistory()
+        return shell.getCommandHistory(command)
     }
 
     private func executeCommand(_ command: String) -> String {

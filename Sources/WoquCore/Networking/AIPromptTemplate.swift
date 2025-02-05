@@ -34,6 +34,7 @@ public struct AIPromptTemplate {
                              command: String) -> String {
         let historyStr = history.joined(separator: "\n")
 
+        /*
         // Filter out sensitive environment variables
         let filteredEnv = environment.filter {
             let lowerKey = $0.key.lowercased()
@@ -42,11 +43,12 @@ public struct AIPromptTemplate {
                    !lowerKey.contains("secret")
         }
         let envStr = filteredEnv.map { "\($0.key)=\($0.value)" }.joined(separator: "\n")
+        */
 
         return String(format: commandCorrectionPrompt,
                      currentDir,
                      historyStr,
-                     envStr,
+                     "", //envStr, // TODO: env
                      error,
                      command)
     }

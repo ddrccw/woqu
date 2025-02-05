@@ -40,10 +40,10 @@ public actor APIClient {
                 ["role": "user", "content": finalPrompt]
             ],
             "temperature": self.temperature,
-            "response_format": ["type": "json_object"]
+            // "response_format": ["type": "json_object"], siliconflow not support
         ]
 
-        print("parameters json: \(parameters.mu_toJSONString())")
+        print("parameters json: \(parameters.mu_toJSONString() ?? "")")
         var request = URLRequest(url: apiUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

@@ -2,8 +2,8 @@ import Foundation
 
 public enum ShellType: String {
     case zsh
-    case bash
-    case fish
+    // case bash
+    // case fish
 }
 
 public class ShellFactory {
@@ -11,10 +11,12 @@ public class ShellFactory {
         switch type {
         case .zsh:
             return ZshShell()
-        case .bash:
-            return BashShell()
-        case .fish:
-            return FishShell()
+            /*
+             case .bash:
+             return BashShell()
+             case .fish:
+             return FishShell()
+             */
         }
     }
 }

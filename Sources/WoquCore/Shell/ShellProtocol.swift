@@ -5,7 +5,7 @@ public protocol ShellProtocol {
     var historyFilePath: String { get }
 
     /// Get formatted command history
-    func getCommandHistory() -> [CommandHistory]
+    func getCommandHistory(_ command: String?) -> [CommandHistory]
 
     /// Execute a shell command
     func executeCommand(_ command: String) -> CommandResult
