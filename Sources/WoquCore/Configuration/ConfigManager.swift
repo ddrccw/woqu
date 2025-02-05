@@ -39,7 +39,33 @@ public struct ConfigManager: Sendable {
     public struct Configuration: Codable, Sendable {
         public let defaultProvider: ProviderType
         public let providers: [ProviderType: ProviderConfig]
-        public let promptTemplates: [String: String]
+        public let promptTemplates: [String: String]?
+
+        enum CodingKeys: String, CodingKey {
+            case defaultProvider
+            case providers
+            case promptTemplates
+        }
+
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            self.defaultProvider = try container.decode(ProviderType.self, forKey: .defaultProvider)
+
+            // Custom decoding for providers dictionary
+            let providersDict = try container.decode([String: ProviderConfig].self, forKey: .providers)
+            self.providers = try providersDict.reduce(into: [ProviderType: ProviderConfig]()) { result, pair in
+                guard let providerType = ProviderType(rawValue: pair.key) else {
+                    throw DecodingError.dataCorruptedError(
+                        forKey: .providers,
+                        in: container,
+                        debugDescription: "Invalid provider type: \(pair.key)"
+                    )
+                }
+                result[providerType] = pair.value
+            }
+
+            self.promptTemplates = try container.decodeIfPresent([String: String].self, forKey: .promptTemplates)
+        }
 
         public struct ProviderConfig: Codable, Sendable {
             public let apiKey: String
@@ -77,8 +103,9 @@ public struct ConfigManager: Sendable {
             throw ConfigError.configFileNotFound
         }
 
-        let data = try Data(contentsOf: configPath)
+        let yamlString = try String(contentsOf: configPath)
         let decoder = YAMLDecoder()
+        let data = yamlString.data(using: .utf8)!
         return try decoder.decode(Configuration.self, from: data)
     }
 

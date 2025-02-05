@@ -1,0 +1,33 @@
+import Foundation
+import ArgumentParser
+import WoquCore
+import Darwin
+
+public struct RunCommand: AsyncParsableCommand {
+    public static let configuration = CommandConfiguration(
+        commandName: "run",
+        abstract: "Execute a command with woqu's intelligent assistance",
+        discussion: """
+        Executes a command while providing intelligent suggestions and error handling.
+        The command will be analyzed and executed with additional context from woqu.
+        """
+    )
+
+    @Option(name: .shortAndLong, help: "The provider to use (deepseek, openai, anthropic)")
+    var provider: ConfigManager.ProviderType?
+
+    public init() {}
+
+    public func run() async throws {
+        // Setup signal handler
+        signal(SIGINT) { _ in
+            print("\nReceived interrupt signal. Exiting gracefully...")
+            Darwin.exit(0)
+        }
+
+        let woqu = await Woqu()
+
+        // Initialize with provider configuration
+        await woqu.run(provider: provider)
+    }
+}

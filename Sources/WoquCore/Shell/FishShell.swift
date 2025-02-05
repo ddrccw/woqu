@@ -14,35 +14,6 @@ public class FishShell: ShellProtocol {
         return formatter
     }()
 
-    public func getRawHistoryLines(limit: Int = 10) -> [String] {
-        let process = Process()
-        let pipe = Pipe()
-
-        process.executableURL = URL(fileURLWithPath: "/usr/local/bin/fish")
-        process.arguments = ["-c", "history"]
-        process.standardOutput = pipe
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            guard let output = String(data: data, encoding: .utf8) else {
-                return []
-            }
-
-            // Fish history format: "- cmd: command"
-            return output.components(separatedBy: "\n")
-                .filter { $0.hasPrefix("- cmd: ") }
-                .map { $0.replacingOccurrences(of: "- cmd: ", with: "") }
-                .prefix(limit)
-                .map { String($0) }
-        } catch {
-            print("Error getting Fish raw history: \(error)")
-            return []
-        }
-    }
-
     public func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
         // Fish history format: "- cmd: command\n   when: timestamp"
         let components = line.components(separatedBy: "\n")
@@ -88,26 +59,7 @@ public class FishShell: ShellProtocol {
                 }
         } catch {
             print("Error reading history file: \(error)")
-            // Fallback to raw history lines
-            return getRawHistoryLines().map {
-                // Check cache first
-                if let cachedOutput = commandOutputCache[$0] {
-                    return CommandHistory(
-                        command: $0,
-                        output: cachedOutput,
-                        timestamp: Date()
-                    )
-                }
-
-                // Execute command and cache result
-                let result = executeCommand($0)
-                commandOutputCache[$0] = result.output
-                return CommandHistory(
-                    command: $0,
-                    output: result.output,
-                    timestamp: Date()
-                )
-            }
+            return []
         }
     }
 

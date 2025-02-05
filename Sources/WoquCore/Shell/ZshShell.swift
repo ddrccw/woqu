@@ -13,31 +13,6 @@ public class ZshShell: ShellProtocol {
         return formatter
     }()
 
-    public func getRawHistoryLines(limit: Int = 10) -> [String] {
-        let process = Process()
-        let pipe = Pipe()
-
-        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        process.arguments = ["-i", "-c", "fc -ln -\(limit)"]
-        process.standardOutput = pipe
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            guard let output = String(data: data, encoding: .utf8) else {
-                return []
-            }
-
-            return output.components(separatedBy: "\n")
-                .filter { !$0.isEmpty }
-        } catch {
-            print("Error getting Zsh raw history: \(error)")
-            return []
-        }
-    }
-
     public func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
         // Zsh history format: ": <timestamp>:<seconds>;<command>"
         let components = line.components(separatedBy: ";")
@@ -49,7 +24,7 @@ public class ZshShell: ShellProtocol {
         // Extract timestamp from ": <timestamp>:<seconds>"
         let timestampComponents = timestampPart.components(separatedBy: ":")
         guard timestampComponents.count >= 3,
-              let secondsSinceEpoch = Double(timestampComponents[2]) else {
+              let secondsSinceEpoch = Double(timestampComponents[1].trimmingCharacters(in: .whitespacesAndNewlines)) else {
             return nil
         }
 
@@ -60,52 +35,55 @@ public class ZshShell: ShellProtocol {
     public func getCommandHistory() -> [CommandHistory] {
         // Read history file directly for more accurate timestamps
         do {
-            let historyContent = try String(contentsOfFile: historyFilePath)
-            return historyContent.components(separatedBy: "\n")
+            // Try UTF-8 first
+            var historyContent: String
+            if let utf8Content = try? String(contentsOfFile: historyFilePath, encoding: .utf8) {
+                historyContent = utf8Content
+            } else {
+                // Fall back to latin1 if UTF-8 fails
+                historyContent = try String(contentsOfFile: historyFilePath, encoding: .isoLatin1)
+            }
+            // Get all woqu commands from history in original order
+            let allCommandHistory = historyContent.components(separatedBy: "\n")
+            let allCommands: [(Date, String)] = allCommandHistory
                 .compactMap { line in
-                    guard let (timestamp, command) = parseHistoryLine(line) else {
+                    guard let (timestamp, command) = parseHistoryLine(line),
+                          command.contains("woqu") == false else {
+                        // print("history cmd invalid line: \(line)")
                         return nil
                     }
-                    // Check cache first
-                    if let cachedOutput = commandOutputCache[command] {
+
+                    // print("history cmd valid line: \(line)")
+                    return (timestamp, command)
+                }.suffix(10)
+
+            // Take up to 10 most recent commands while maintaining original order
+            let recentCommands = Array(allCommands)
+            var historyEntries: [CommandHistory] = []
+
+            // Execute only the last command
+            if let (_, command) = recentCommands.last {
+                historyEntries = recentCommands.map { (ts, cmd) in
+                    if cmd == command {
+                        let result = executeCommand(command)
                         return CommandHistory(
-                            command: command,
-                            output: cachedOutput,
-                            timestamp: timestamp
+                            command: cmd,
+                            output: result.errorOutput,
+                            timestamp: ts
                         )
                     }
-
-                    // Execute command and cache result
-                    let result = executeCommand(command)
-                    commandOutputCache[command] = result.output
                     return CommandHistory(
-                        command: command,
-                        output: result.output,
-                        timestamp: timestamp
+                        command: cmd,
+                        output: "",
+                        timestamp: ts
                     )
                 }
+            }
+
+            return historyEntries
         } catch {
             print("Error reading history file: \(error)")
-            // Fallback to raw history lines
-            return getRawHistoryLines().map {
-                // Check cache first
-                if let cachedOutput = commandOutputCache[$0] {
-                    return CommandHistory(
-                        command: $0,
-                        output: cachedOutput,
-                        timestamp: Date()
-                    )
-                }
-
-                // Execute command and cache result
-                let result = executeCommand($0)
-                commandOutputCache[$0] = result.output
-                return CommandHistory(
-                    command: $0,
-                    output: result.output,
-                    timestamp: Date()
-                )
-            }
+            return []
         }
     }
 
@@ -113,34 +91,36 @@ public class ZshShell: ShellProtocol {
         let process = Process()
         let outputPipe = Pipe()
         let errorPipe = Pipe()
+        let semaphore = DispatchSemaphore(value: 0)
 
         process.executableURL = URL(fileURLWithPath: "/bin/zsh")
         process.arguments = ["-c", command]
         process.standardOutput = outputPipe
         process.standardError = errorPipe
 
+        var output = ""
+        var errorOutput = ""
+        var exitCode: Int32 = 0
+
         do {
             try process.run()
-            process.waitUntilExit()
 
+            // Process completed normally
             let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
             let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
+            output = String(data: outputData, encoding: .utf8) ?? ""
+            errorOutput = String(data: errorData, encoding: .utf8) ?? ""
+//            exitCode = process.terminationStatus
 
-            let output = String(data: outputData, encoding: .utf8) ?? ""
-            let errorOutput = String(data: errorData, encoding: .utf8) ?? ""
-
-            return CommandResult(
-                output: output,
-                errorOutput: errorOutput,
-                exitCode: process.terminationStatus
-            )
         } catch {
             print("Failed to execute Zsh command: \(error)")
-            return CommandResult(
-                output: "",
-                errorOutput: error.localizedDescription,
-                exitCode: -1
-            )
+            errorOutput = error.localizedDescription
         }
+
+        return CommandResult(
+            output: output,
+            errorOutput: errorOutput,
+            exitCode: errorOutput.isEmpty ? 0: -1
+        )
     }
 }

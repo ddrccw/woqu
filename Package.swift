@@ -13,9 +13,9 @@ let package = Package(
         .library(
             name: "WoquCore",
             targets: ["WoquCore"]),
-//        .library(
-//            name: "WoquCLI",
-//            targets: ["WoquCLI"])
+        .library(
+            name: "WoquCLI",
+            targets: ["WoquCLI"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.5.0"),
@@ -25,7 +25,7 @@ let package = Package(
         .executableTarget(
             name: "woqu",
             dependencies: [
-                "WoquCore",
+                "WoquCLI",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
             path: "Sources/Woqu"
@@ -37,14 +37,14 @@ let package = Package(
             ],
             path: "Sources/WoquCore"
         ),
-//        .target(
-//            name: "WoquCLI",
-//            dependencies: [
-//                "WoquCore",
-//                .product(name: "ArgumentParser", package: "swift-argument-parser")
-//            ],
-//            path: "Sources/WoquCLI"
-//        ),
+        .target(
+            name: "WoquCLI",
+            dependencies: [
+                "WoquCore",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ],
+            path: "Sources/WoquCLI"
+        ),
 //        .testTarget(
 //            name: "WoquTests",
 //            dependencies: ["WoquCore"])

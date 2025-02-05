@@ -10,9 +10,6 @@ public protocol ShellProtocol {
     /// Execute a shell command
     func executeCommand(_ command: String) -> CommandResult
 
-    /// Get raw history lines from the shell
-    func getRawHistoryLines(limit: Int) -> [String]
-
     /// Parse a raw history line into command components
     func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)?
 }
