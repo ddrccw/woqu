@@ -16,7 +16,7 @@ public protocol ShellProtocol {
 
 public struct CommandHistory {
     public let command: String
-    public let output: String
+    public let result: CommandResult?
     public let timestamp: Date
 }
 

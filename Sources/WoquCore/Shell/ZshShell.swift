@@ -74,13 +74,13 @@ public class ZshShell: ShellProtocol {
                         let result = executeCommand(command)
                         return CommandHistory(
                             command: cmd,
-                            output: result.errorOutput,
+                            result: result,
                             timestamp: ts
                         )
                     }
                     return CommandHistory(
                         command: cmd,
-                        output: "",
+                        result: nil,
                         timestamp: ts
                     )
                 }
@@ -108,7 +108,7 @@ public class ZshShell: ShellProtocol {
         var output = ""
         var errorOutput = ""
         var exitCode: Int32 = 0
-        let timeout: TimeInterval = 30
+        let timeout: TimeInterval = 3
         var timedOut = false
 
         do {
@@ -117,9 +117,9 @@ public class ZshShell: ShellProtocol {
             // 使用 weak 避免循环引用
             let timeoutWorkItem = DispatchWorkItem { [weak process, weak queue] in
                 queue?.sync {
-                    if let isRunning = process?.isRunning, isRunning {
+                    if let process = process, process.isRunning {
                         timedOut = true
-                        process?.terminate()
+                        kill(process.processIdentifier, SIGTERM)
                     }
                 }
             }
@@ -133,7 +133,7 @@ public class ZshShell: ShellProtocol {
             queue.sync {
                 if timedOut {
                     errorOutput = "Command timed out after \(timeout) seconds"
-                    exitCode = -1
+                    exitCode = process.terminationStatus
                 } else {
                     let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
                     let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()

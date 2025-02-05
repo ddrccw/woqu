@@ -105,8 +105,14 @@ final public class Woqu {
             print("Error: Invalid API response. Please check your configuration.")
         } catch APIError.noData {
             print("Error: No data received from API. Please check your internet connection.")
-        } catch APIError.noErrorInHistory {
-            print("No recent command errors found. Skipping API request.")
+        } catch APIError.noErrorInHistory(let command) {
+            if let command = command {
+                print("Exec \"\(command)\", no recent errors found. Skipping API request.")
+            } else {
+                print("No recent command errors found. Skipping API request.")
+            }
+        } catch APIError.execTimeout(let command) {
+            print("Exec \"\(command)\" timed out. Skipping API request.")
         } catch {
             print("Error: \(error.localizedDescription)")
         }
@@ -122,8 +128,18 @@ final public class Woqu {
         let historyWithErrors = history
 
         // Skip API call if no error output exists
-        guard let lastError = historyWithErrors.last, !lastError.output.isEmpty else {
-            throw APIError.noErrorInHistory
+        guard let lastError = historyWithErrors.last,
+              let result = lastError.result else {
+            throw APIError.noErrorInHistory(command: nil)
+        }
+
+        // Skip API call if execution timeout
+        guard result.exitCode != SIGTERM else {
+            throw APIError.execTimeout(command: lastError.command)
+        }
+
+        guard result.exitCode != 0 else {
+            throw APIError.noErrorInHistory(command: lastError.command)
         }
 
         // Create prompt using template
@@ -131,8 +147,8 @@ final public class Woqu {
             currentDir: currentDir,
             history: historyWithErrors.map { $0.command },
             environment: environment,
-            error: historyWithErrors.last?.output ?? "",
-            command: historyWithErrors.last?.command ?? ""
+            error: result.errorOutput,
+            command: lastError.command
         )
 
         for attempt in 1...maxRetries {

@@ -103,7 +103,8 @@ public enum APIError: Error {
     case notInitialized
     case invalidResponse
     case noData
-    case noErrorInHistory
+    case noErrorInHistory(command: String?)
+    case execTimeout(command: String)
 }
 
 
