@@ -54,7 +54,7 @@ public actor APIClient {
 
         guard let httpResponse = response as? HTTPURLResponse,
               httpResponse.statusCode == 200 else {
-            throw APIError.invalidResponse
+            throw WoquError.API.invalidResponse
         }
 
         return APIResponse(data: data)

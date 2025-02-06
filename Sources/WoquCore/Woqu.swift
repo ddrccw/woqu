@@ -91,7 +91,7 @@ final public class Woqu {
 
         } catch ConfigManager.ConfigError.configFileNotFound {
             print("Error: Configuration file not found. Please run 'woqu setup' to configure.")
-        } catch APIError.invalidResponse {
+        } catch WoquError.API.invalidResponse {
             print("Error: Invalid API response. Please check your configuration.")
         } catch APIError.noData {
             print("Error: No data received from API. Please check your internet connection.")
@@ -149,12 +149,12 @@ final public class Woqu {
 
                 // Get suggestion using the formatted prompt
                 guard let response = try await apiClient.getCompletion(prompt: prompt) else {
-                    throw APIError.invalidResponse
+                    throw WoquError.API.invalidResponse
                 }
 
                 // Validate and parse the response
                 guard !response.choices.isEmpty else {
-                    throw APIError.invalidResponse
+                    throw WoquError.API.invalidResponse
                 }
 
                 let suggestion = response.choices[0].message.content
@@ -162,7 +162,7 @@ final public class Woqu {
                 // Validate commands
                 for command in suggestion.commands {
                     guard validateCommand(command.command) else {
-                        throw APIError.invalidResponse
+                        throw WoquError.API.invalidResponse
                     }
                 }
 
@@ -178,7 +178,7 @@ final public class Woqu {
             }
         }
 
-        throw APIError.invalidResponse
+        throw WoquError.API.invalidResponse
     }
 
     private func validateCommand(_ command: String) -> Bool {
