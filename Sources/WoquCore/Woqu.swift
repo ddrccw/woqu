@@ -17,16 +17,6 @@ extension ConfigManager.ProviderType: ExpressibleByArgument {
     }
 }
 
-struct CommandSuggestion: Codable {
-    let explanation: String
-    let commands: [Command]
-
-    struct Command: Codable {
-        let command: String
-        let description: String
-    }
-}
-
 @MainActor
 final public class Woqu {
     private let configManager = ConfigManager.shared
@@ -158,20 +148,16 @@ final public class Woqu {
                 }
 
                 // Get suggestion using the formatted prompt
-                let response = try await apiClient.getCompletion(prompt: prompt)
+                guard let response = try await apiClient.getCompletion(prompt: prompt) else {
+                    throw APIError.invalidResponse
+                }
 
                 // Validate and parse the response
                 guard !response.choices.isEmpty else {
                     throw APIError.invalidResponse
                 }
 
-                let jsonString = response.choices[0].message.content
-                guard let jsonData = jsonString.data(using: String.Encoding.utf8) else {
-                    throw APIError.invalidResponse
-                }
-
-                let decoder = JSONDecoder()
-                let suggestion = try decoder.decode(CommandSuggestion.self, from: jsonData)
+                let suggestion = response.choices[0].message.content
 
                 // Validate commands
                 for command in suggestion.commands {
@@ -181,6 +167,7 @@ final public class Woqu {
                 }
 
                 return suggestion
+
             } catch {
                 print("getCommandSuggestionWithRetry: \(error)")
 
