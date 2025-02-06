@@ -66,22 +66,7 @@ public struct Message: WQCodable {
 
         // Decode and sanitize content string
         let rawString = try container.decode(String.self, forKey: .content)
-
-        // Remove markdown code fences and trim whitespace
-        let sanitizedString = rawString
-            .replacingOccurrences(of: "^```json", with: "", options: .regularExpression)
-            .replacingOccurrences(of: "```$", with: "", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard !sanitizedString.isEmpty else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .content,
-                in: container,
-                debugDescription: "Empty content after removing markdown formatting"
-            )
-        }
-
-        guard let suggestion = CommandSuggestion(string: sanitizedString) else {
+        guard let suggestion = CommandSuggestion.create(content: rawString) else {
             throw DecodingError.dataCorruptedError(
                 forKey: .content,
                 in: container,
@@ -116,6 +101,47 @@ public enum APIError: Error {
 public struct CommandSuggestion: WQCodable {
     let explanation: String
     let commands: [Command]
+    var think: String? // 新增字段存储思考内容
+
+    public static func create(content: String) -> CommandSuggestion? {
+        // Remove markdown code fences and trim whitespace
+        var string = content
+            .replacingOccurrences(of: "^```json", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "```$", with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let think = content.extractThink();
+
+        // remove think tag
+        string = string.removeThinkTag()
+
+        guard !string.isEmpty else {
+            print("Empty content after removing markdown formatting")
+            return nil
+        }
+
+        if var inst = CommandSuggestion(string: string) {
+            inst.think = think
+            return inst
+        }
+
+        return nil
+    }
+
+    init?(string: String, think: String) {
+        self.init(string: think)
+        self.think = think
+    }
+
+    static func removeThinkTags(from string: String) -> String {
+        let pattern = "<think[^>]*>|</think>"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return string
+        }
+        let range = NSRange(location: 0, length: string.utf16.count)
+        return regex.stringByReplacingMatches(in: string, options: [], range: range, withTemplate: "")
+    }
+
 
     struct Command: WQCodable {
         let command: String
