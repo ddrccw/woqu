@@ -63,10 +63,12 @@ class SuggestService {
             """)
 
             if !dryRun {
-                Logger.info("Execute commands? (y/n)")
+                Logger.info("Execute command '\(command.command)'? (y/n)")
                 if let input = readLine(), input.lowercased() == "y" {
                     let result = executeCommand(command.command)
                     Logger.info(result)
+                } else {
+                    Logger.info("Command not executed")
                 }
             }
         }

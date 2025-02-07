@@ -40,7 +40,7 @@ public struct RunCommand: AsyncParsableCommand {
     var command: String?
 
     @Option(name: .shortAndLong, help: "Dry run mode")
-    var dryRun: Bool = true
+    var dryRun: Bool = false
 
     @Option(name: .shortAndLong, help: "Log level, e.g. debug, info, warning, error")
     var logLevel: Logger.Level?

@@ -12,7 +12,12 @@ final public class Woqu {
             let suggestService = try SuggestService(provider: provider)
             try await suggestService.run(command: command, dryRun: dryRun)
         } catch let error as WoquError {
-            Logger.error(error.errorDescription ?? "")
+            if case .commandError(let reason) = error,
+               case .execNoError(_) = reason {
+                Logger.info(error.localizedDescription)
+            } else {
+                Logger.error(error.errorDescription ?? "Unknown WoquError")
+            }
         } catch {
             Logger.error("Error: \(error.localizedDescription)")
         }
