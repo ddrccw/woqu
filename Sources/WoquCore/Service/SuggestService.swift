@@ -151,7 +151,7 @@ class SuggestService {
         if result.exitCode == 0 {
             return result.output
         } else {
-            return "Error executing command: \(result.output)"
+            return "Error executing command: \(result.output), error: \(result.errorOutput), exit code: \(result.exitCode)"
         }
     }
 

@@ -109,7 +109,7 @@ public class ZshShell: ShellProtocol {
         var output = ""
         var errorOutput = ""
         var exitCode: Int32 = 0
-        let timeout: TimeInterval = 3
+        let timeout: TimeInterval = 30
         var timedOut = false
 
         do {
