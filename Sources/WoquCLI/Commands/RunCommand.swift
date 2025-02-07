@@ -13,6 +13,16 @@ extension Provider.Name: ExpressibleByArgument {
     }
 }
 
+extension Logger.Level: ExpressibleByArgument {
+    public init?(argument: String) {
+        if let value = Logger.Level(rawValue: argument.uppercased()) {
+            self = value
+        } else {
+            return nil
+        }
+    }
+}
+
 public struct RunCommand: AsyncParsableCommand {
     public static let configuration = CommandConfiguration(
         commandName: "run",
@@ -32,16 +42,29 @@ public struct RunCommand: AsyncParsableCommand {
     @Option(name: .shortAndLong, help: "Dry run mode")
     var dryRun: Bool = true
 
+    @Option(name: .shortAndLong, help: "Log level, e.g. debug, info, warning, error")
+    var logLevel: Logger.Level?
+
     public init() {}
 
     public func run() async throws {
+        if let logLevel = logLevel {
+            try await Logger.$logLevel.withValue(logLevel) {
+                try await internalRun()
+            }
+        } else {
+            try await internalRun()
+        }
+    }
+
+    func internalRun() async throws {
         // Setup signal handler
         signal(SIGINT) { _ in
-            print("\nReceived interrupt signal. Exiting gracefully...")
+            Logger.info("\nReceived interrupt signal. Exiting gracefully...")
             Darwin.exit(0)
         }
 
-        let woqu = await Woqu()
+        let woqu = Woqu()
 
         await woqu.run(command, provider: provider, dryRun: dryRun)
     }

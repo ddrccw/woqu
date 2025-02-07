@@ -30,6 +30,11 @@ public class Logger {
     @TaskLocal public static var logLevel: Level = .info
     @TaskLocal public static var showColors = true
     @TaskLocal public static var terminalBuffer = TerminalBuffer(maxLines: 5)
+    static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return formatter
+    }()
 
     public static func debug(_ message: String, tag: String = "General", file: String = #file, line: Int = #line) {
         log(level: .debug, message: message, tag: tag, file: file, line: line)
@@ -50,10 +55,10 @@ public class Logger {
     private static func log(level: Level, message: String, tag: String, file: String, line: Int) {
         guard level.rawValue >= logLevel.rawValue else { return }
 
-        let timestamp = Date().ISO8601Format()
+        let timestamp = dateFormatter.string(from: Date())
         let fileName = URL(fileURLWithPath: file).lastPathComponent
 
-        var logComponents = [
+        let logComponents = [
             "\(timestamp)",
             "[\(level.icon) \(level.rawValue)]",
             "[\(tag)]",
@@ -61,11 +66,15 @@ public class Logger {
             "- \(message)"
         ]
 
+        var finalMessage = logComponents.joined(separator: " ")
         if showColors {
-            logComponents[1] = logComponents[1].applyingColor(level.color)
-            logComponents[3] = message.applyingColor(level.color)
+            finalMessage = finalMessage.applyingColor(level.color)
         }
 
-        terminalBuffer.append(logComponents.joined(separator: " "))
+        #if DEBUG
+        print(finalMessage)
+        #else
+        terminalBuffer.append(finalMessage)
+        #endif
     }
 }

@@ -30,7 +30,8 @@ actor OpenAIService: APIService {
             parameters["response_format"] = ["type": "json_object"]
         }
 
-        print("parameters json: \(parameters.wq_toJSONString() ?? "")")
+        Logger.debug("parameters json: \(parameters.wq_toDebugJSONString() ?? "")")
+        Logger.debug("prompt: \(finalPrompt)")
         var request = URLRequest(url: provider.apiUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

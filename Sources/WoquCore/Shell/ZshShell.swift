@@ -88,7 +88,7 @@ public class ZshShell: ShellProtocol {
 
             return historyEntries
         } catch {
-            print("Error reading history file: \(error)")
+            Logger.error("Error reading history file: \(error)")
             return []
         }
     }
@@ -100,6 +100,7 @@ public class ZshShell: ShellProtocol {
 
         process.executableURL = URL(fileURLWithPath: "/bin/zsh")
         process.arguments = ["-c", command]
+        process.environment = ProcessInfo.processInfo.environment
         process.standardOutput = outputPipe
         process.standardError = errorPipe
 
@@ -143,7 +144,7 @@ public class ZshShell: ShellProtocol {
                 }
             }
         } catch {
-            print("Failed to execute Zsh command: \(error)")
+            Logger.error("Failed to execute Zsh command: \(error)")
             errorOutput = error.localizedDescription
             exitCode = process.terminationStatus
         }

@@ -23,7 +23,7 @@ extension WQCodable {
             return try decoder.decode(Self.self, from: data)
         } catch {
             // 错误处理，例如打印错误信息，或传递错误到调用者
-            print("Decode error: \(error)")
+            Logger.error("Decode error: \(error)")
             return nil
         }
     }

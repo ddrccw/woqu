@@ -41,6 +41,10 @@ extension Dictionary {
             return ret
         }
     }
+
+    public func wq_toDebugJSONString() -> String? {
+        return wq_toJSONString(options: [.prettyPrinted, .sortedKeys])
+    }
 }
 
 

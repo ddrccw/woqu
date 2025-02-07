@@ -60,7 +60,7 @@ public struct CommandSuggestion: WQCodable {
         string = string.removeThinkTag()
 
         guard !string.isEmpty else {
-            print("Empty content after removing markdown formatting")
+            Logger.warning("Empty content after removing markdown formatting")
             return nil
         }
 

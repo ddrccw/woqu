@@ -21,7 +21,7 @@ class SuggestService {
         if let provider = provider, let config = config.providers[provider] {
             providerConfig = config
         } else {
-            print("Warning: Provider \(String(describing: provider)) not found in config, using default provider \(config.defaultProvider)")
+            Logger.warning("Provider \(String(describing: provider)) not found in config, using default provider \(config.defaultProvider)")
             guard let defaultConfig = config.providers[config.defaultProvider] else {
                 throw WoquError.initError(.invalidProvider(config.defaultProvider))
             }
@@ -40,25 +40,33 @@ class SuggestService {
 
         let suggestion: CommandSuggestion = try await getCommandSuggestionWithRetry(history: history)
 
+        // display reason
+        if let think = suggestion.think {
+            Logger.info("""
+            Reason:
+            \(think)
+            """)
+        }
+
         // display suggestion
-        print("""
+        Logger.info("""
         Explanation:
         \(suggestion.explanation)
         """)
 
         // ask user to execute commands
         for (index, command) in suggestion.commands.enumerated() {
-            print("""
+            Logger.info("""
             Command \(index + 1):
             \(command.command)
             Description: \(command.description)
             """)
 
             if !dryRun {
-                print("Execute commands? (y/n)")
+                Logger.info("Execute commands? (y/n)")
                 if let input = readLine(), input.lowercased() == "y" {
                     let result = executeCommand(command.command)
-                    print(result)
+                    Logger.info(result)
                 }
             }
         }
@@ -69,6 +77,7 @@ class SuggestService {
 
         // Get environment variables
         let environment = ProcessInfo.processInfo.environment
+        Logger.debug("Environment: \(environment.wq_toDebugJSONString() ?? "")")
 
         // Get command history with error context
         let historyWithErrors = history
@@ -110,10 +119,10 @@ class SuggestService {
                 }
                 return suggestion
             } catch {
-                print("getCommandSuggestionWithRetry: \(error)")
+                Logger.debug("getCommandSuggestionWithRetry: \(error)")
 
                 if attempt < maxRetries {
-                    print("Retrying in 1 second... (attempt \(attempt)/\(maxRetries))")
+                    Logger.info("Retrying in 1 second... (attempt \(attempt)/\(maxRetries))")
                     try await Task.sleep(nanoseconds: retryDelay)
                 }
             }

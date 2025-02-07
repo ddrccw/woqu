@@ -14,7 +14,7 @@ final public class Woqu {
         } catch let error as WoquError {
             Logger.error(error.errorDescription ?? "")
         } catch {
-            print("Error: \(error.localizedDescription)")
+            Logger.error("Error: \(error.localizedDescription)")
         }
     }
 }
