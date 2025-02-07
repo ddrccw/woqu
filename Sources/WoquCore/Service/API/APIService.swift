@@ -8,6 +8,6 @@
 import Foundation
 
 protocol APIService {
-    func getCompletion(prompt: String) async throws -> CommandSuggestion?
+    func getCompletion(prompt: String) async throws -> CommandSuggestion
 }
 

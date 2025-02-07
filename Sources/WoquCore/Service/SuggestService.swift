@@ -8,7 +8,7 @@
 import Foundation
 
 class SuggestService {
-    private var apiClient: APIClient?
+    private let apiClient: APIClient
     private let maxRetries = 3
     private let retryDelay: UInt64 = 1_000_000_000 // 1 second in nanoseconds
 
@@ -99,24 +99,16 @@ class SuggestService {
 
         for attempt in 1...maxRetries {
             do {
-                guard let apiClient = apiClient else {
-                    throw WoquError.apiError(.notInitialized)
-                }
-
                 // Get suggestion using the formatted prompt
-                guard let suggestion = try await apiClient.getCompletion(prompt: prompt) else {
-                    throw WoquError.apiError(.invalidResponse)
-                }
+                let suggestion = try await apiClient.getCompletion(prompt: prompt)
 
                 // Validate commands
                 for command in suggestion.commands {
                     guard validateCommand(command.command) else {
-                        throw WoquError.apiError(.invalidResponse)
+                        throw WoquError.commandError(.invalidCommand(command.command))
                     }
                 }
-
                 return suggestion
-
             } catch {
                 print("getCommandSuggestionWithRetry: \(error)")
 
@@ -127,7 +119,7 @@ class SuggestService {
             }
         }
 
-        throw WoquError.apiError(.invalidResponse)
+        throw WoquError.commandError(.suggestFailed(lastError.command))
     }
 
     private func validateCommand(_ command: String) -> Bool {

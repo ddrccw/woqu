@@ -14,7 +14,7 @@ actor OpenAIService: @preconcurrency APIService {
     }
 
     @MainActor
-    func getCompletion(prompt: String) async throws -> CommandSuggestion? {
+    func getCompletion(prompt: String) async throws -> CommandSuggestion {
         // Use template if provided
         let finalPrompt = prompt
 
@@ -52,8 +52,6 @@ actor OpenAIService: @preconcurrency APIService {
         }
 
         let suggestion = resp.choices[0].message.content
-
         return suggestion
-
     }
 }

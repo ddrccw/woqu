@@ -26,14 +26,11 @@ public enum WoquError: Error, LocalizedError {
     // Initialization related errors
     public enum InitErrorReason: LocalizedError {
         case invalidProvider(Provider.Name)
-        case invalidAPIURL
 
         public var errorDescription: String? {
             switch self {
             case .invalidProvider(let provider):
                 return "Invalid provider: \(provider.rawValue)"
-            case .invalidAPIURL:
-                return "Invalid API URL format"
             }
         }
     }
@@ -44,26 +41,26 @@ public enum WoquError: Error, LocalizedError {
             switch self {
             case .invalidProvider(let provider):
                 return "Invalid provider: \(provider.rawValue)"
-//            case .missingKey(let key):
-//                return "Missing required configuration key: \(key)"
             case .invalidValue(let value):
                 return "Invalid configuration value: \(value)"
             case .fileNotFound:
                 return "Configuration file not found"
+            case .parsingError(let detail):
+                return "Error parsing configuration file: \(detail)"
             }
         }
 
         case invalidProvider(Provider.Name)
-//        case missingKey(String)
         case invalidValue(String)
         case fileNotFound
+        case parsingError(String)
     }
 
     // Shell/Command related errors
     public enum CommandErrorReason: LocalizedError {
         public var errorDescription: String? {
             switch self {
-            case .commandFailed(let command):
+            case .suggestFailed(let command):
                 return "Command failed: \(command)"
             case .timeout(let command):
                 return "Command timed out: \(command)"
@@ -77,9 +74,9 @@ public enum WoquError: Error, LocalizedError {
                 }
             }
         }
-        case commandFailed(String)
+        case suggestFailed(String)
         case timeout(command: String)
-        case invalidCommand
+        case invalidCommand(String)
         case execNoError(command: String? = nil)
     }
 
@@ -89,24 +86,21 @@ public enum WoquError: Error, LocalizedError {
             switch self {
             case .notInitialized:
                 return "API not properly initialized"
-//            case .invalidURL:
-//                return "Invalid URL provided"
-//            case .invalidRequest:
-//                return "Invalid API request"
             case .invalidResponse:
                 return "Invalid API response"
             case .parsingError(let detail):
                 return "Error parsing API response: \(detail)"
             case .statusCode(let code):
                 return "Received unexpected status code: \(code)"
+            case .providerNotSupported(let provider):
+                return "Provider not supported: \(provider)"
             }
         }
         case notInitialized
-//        case invalidURL
-//        case invalidRequest
         case invalidResponse
         case parsingError(String)
         case statusCode(Int)
+        case providerNotSupported(String)
     }
 
 }

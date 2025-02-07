@@ -71,10 +71,14 @@ public struct ConfigManager: Sendable {
             throw WoquError.configError(.fileNotFound)
         }
 
-        let yamlString = try String(contentsOf: configPath)
-        let decoder = YAMLDecoder()
-        let data = yamlString.data(using: .utf8)!
-        return try decoder.decode(Configuration.self, from: data)
+        do {
+            let yamlString = try String(contentsOf: configPath)
+            let decoder = YAMLDecoder()
+            let data = yamlString.data(using: .utf8)!
+            return try decoder.decode(Configuration.self, from: data)
+        } catch {
+            throw WoquError.configError(.parsingError(error.localizedDescription))
+        }
     }
 
 //    public func saveConfig(_ config: Configuration) throws {
