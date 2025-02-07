@@ -25,7 +25,7 @@ public enum WoquError: Error, LocalizedError {
 
     // Initialization related errors
     public enum InitErrorReason: LocalizedError {
-        case invalidProvider(ConfigManager.ProviderType)
+        case invalidProvider(Provider.Name)
         case invalidAPIURL
 
         public var errorDescription: String? {
@@ -46,16 +46,16 @@ public enum WoquError: Error, LocalizedError {
                 return "Invalid provider: \(provider.rawValue)"
 //            case .missingKey(let key):
 //                return "Missing required configuration key: \(key)"
-//            case .invalidValue(let value):
-//                return "Invalid configuration value: \(value)"
+            case .invalidValue(let value):
+                return "Invalid configuration value: \(value)"
             case .fileNotFound:
                 return "Configuration file not found"
             }
         }
 
-        case invalidProvider(ConfigManager.ProviderType)
+        case invalidProvider(Provider.Name)
 //        case missingKey(String)
-//        case invalidValue(String)
+        case invalidValue(String)
         case fileNotFound
     }
 
@@ -95,8 +95,8 @@ public enum WoquError: Error, LocalizedError {
 //                return "Invalid API request"
             case .invalidResponse:
                 return "Invalid API response"
-            case .parsingError:
-                return "Error parsing API response"
+            case .parsingError(let detail):
+                return "Error parsing API response: \(detail)"
             case .statusCode(let code):
                 return "Received unexpected status code: \(code)"
             }
@@ -105,7 +105,7 @@ public enum WoquError: Error, LocalizedError {
 //        case invalidURL
 //        case invalidRequest
         case invalidResponse
-        case parsingError
+        case parsingError(String)
         case statusCode(Int)
     }
 

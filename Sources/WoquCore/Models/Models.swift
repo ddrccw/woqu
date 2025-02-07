@@ -1,32 +1,73 @@
 import Foundation
 
-public struct AIRequest: Encodable {
+//public struct AIRequest: Encodable {
+//    public let model: String
+//    public let messages: [Message]
+//    public let temperature: Double?
+//    public let maxTokens: Int?
+//
+//    public struct Message: Codable {
+//        public let role: Role
+//        public let content: String
+//
+//        public enum Role: String, Codable {
+//            case system
+//            case user
+//            case assistant
+//        }
+//    }
+//
+//    public init(
+//        model: String,
+//        messages: [Message],
+//        temperature: Double? = nil,
+//        maxTokens: Int? = nil
+//    ) {
+//        self.model = model
+//        self.messages = messages
+//        self.temperature = temperature
+//        self.maxTokens = maxTokens
+//    }
+//}
+
+struct ProviderData: Codable, Sendable {
+    public let apiKey: String
+    public let apiUrl: String
     public let model: String
-    public let messages: [Message]
-    public let temperature: Double?
-    public let maxTokens: Int?
+    public let temperature: Double
+    enum CodingKeys: String, CodingKey {
+        case apiKey
+        case apiUrl
+        case model
+        case temperature
+    }
+}
 
-    public struct Message: Codable {
-        public let role: Role
-        public let content: String
-
-        public enum Role: String, Codable {
-            case system
-            case user
-            case assistant
-        }
+public struct Provider: Sendable {
+    public enum Name: String, Codable, Sendable {
+        case deepseek = "deepseek"
+        case openai = "openai"
+        case siliconflow = "siliconflow"
+        case alibaba = "alibaba"
+        case unknown = "unknown"
     }
 
-    public init(
-        model: String,
-        messages: [Message],
-        temperature: Double? = nil,
-        maxTokens: Int? = nil
-    ) {
-        self.model = model
-        self.messages = messages
-        self.temperature = temperature
-        self.maxTokens = maxTokens
+    public let apiKey: String
+    public let apiUrl: URL
+    public let model: String
+    public let temperature: Double
+    public let name: Name
+
+    init(_ providerData: ProviderData, name: Name) throws {
+        guard let apiUrl = URL(string: providerData.apiUrl) else {
+            throw WoquError.configError(.invalidValue(providerData.apiUrl))
+        }
+
+        self.apiUrl = apiUrl
+        apiKey = providerData.apiKey
+        model = providerData.model
+        temperature = providerData.temperature
+        self.name = name
     }
 }
 
@@ -67,11 +108,7 @@ public struct Message: WQCodable {
         // Decode and sanitize content string
         let rawString = try container.decode(String.self, forKey: .content)
         guard let suggestion = CommandSuggestion.create(content: rawString) else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .content,
-                in: container,
-                debugDescription: "Failed to decode content as CommandSuggestion"
-            )
+            throw WoquError.apiError(.parsingError("Failed to decode content as CommandSuggestion"))
         }
 
         self.content = suggestion

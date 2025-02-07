@@ -11,13 +11,6 @@ public struct ConfigManager: Sendable {
 
     private let configFile = "settings.yml"
 
-    public enum ProviderType: String, Codable, Sendable {
-        case openai = "openai"
-        case deepseek = "deepseek"
-        case siliconflow = "siliconflow"
-        case alibaba = "alibaba"
-    }
-
     /// Configuration structure supporting multiple AI providers
     ///
     /// Example configuration:
@@ -37,9 +30,9 @@ public struct ConfigManager: Sendable {
     /// promptTemplates:
     ///   default: "You are a helpful assistant"
     /// ```
-    public struct Configuration: Codable, Sendable {
-        public let defaultProvider: ProviderType
-        public let providers: [ProviderType: ProviderConfig]
+    public struct Configuration: Decodable, Sendable {
+        public let defaultProvider: Provider.Name
+        public let providers: [Provider.Name: Provider]
         public let promptTemplates: [String: String]?
 
         enum CodingKeys: String, CodingKey {
@@ -50,36 +43,21 @@ public struct ConfigManager: Sendable {
 
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.defaultProvider = try container.decode(ProviderType.self, forKey: .defaultProvider)
+            self.defaultProvider = try container.decode(Provider.Name.self, forKey: .defaultProvider)
 
-            // Custom decoding for providers dictionary
-            let providersDict = try container.decode([String: ProviderConfig].self, forKey: .providers)
-            self.providers = providersDict.reduce(into: [ProviderType: ProviderConfig]()) { result, pair in
-                guard let providerType = ProviderType(rawValue: pair.key) else {
+            let providersDict = try container.decode([String: ProviderData].self, forKey: .providers)
+            self.providers = try providersDict.reduce(into: [Provider.Name: Provider]()) { result, pair in
+                guard let providerType = Provider.Name(rawValue: pair.key) else {
                     Logger.warning("Invalid provider type: \(pair.key)")
                     return
                 }
-                result[providerType] = pair.value
+                result[providerType] = try Provider(pair.value, name: providerType)
             }
 
             self.promptTemplates = try container.decodeIfPresent([String: String].self, forKey: .promptTemplates)
         }
 
-        public struct ProviderConfig: Codable, Sendable {
-            public let apiKey: String
-            public let apiUrl: String
-            public let model: String
-            public let temperature: Double
-
-            public init(apiKey: String, apiUrl: String, model: String, temperature: Double) {
-                self.apiKey = apiKey
-                self.apiUrl = apiUrl
-                self.model = model
-                self.temperature = temperature
-            }
-        }
-
-        public init(defaultProvider: ProviderType, providers: [ProviderType: ProviderConfig], promptTemplates: [String: String]) {
+        public init(defaultProvider: Provider.Name, providers: [Provider.Name: Provider], promptTemplates: [String: String]) {
             self.defaultProvider = defaultProvider
             self.providers = providers
             self.promptTemplates = promptTemplates
@@ -107,11 +85,11 @@ public struct ConfigManager: Sendable {
         return try decoder.decode(Configuration.self, from: data)
     }
 
-    public func saveConfig(_ config: Configuration) throws {
-        let configPath = configDirectory.appendingPathComponent(configFile)
-        let encoder = YAMLEncoder()
-        let yamlString = try encoder.encode(config)
-        try yamlString.write(to: configPath, atomically: true, encoding: .utf8)
-    }
+//    public func saveConfig(_ config: Configuration) throws {
+//        let configPath = configDirectory.appendingPathComponent(configFile)
+//        let encoder = YAMLEncoder()
+//        let yamlString = try encoder.encode(config)
+//        try yamlString.write(to: configPath, atomically: true, encoding: .utf8)
+//    }
 
 }

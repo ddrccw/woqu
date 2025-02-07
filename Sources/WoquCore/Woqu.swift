@@ -2,9 +2,9 @@ import Foundation
 import ArgumentParser
 import Darwin
 
-extension ConfigManager.ProviderType: ExpressibleByArgument {
+extension Provider.Name: ExpressibleByArgument {
     public init?(argument: String) {
-        if let value = ConfigManager.ProviderType(rawValue: argument.lowercased()) {
+        if let value = Provider.Name(rawValue: argument.lowercased()) {
             self = value
         } else {
             return nil
@@ -23,14 +23,14 @@ final public class Woqu {
     }
 
     public func run(_ command: String?,
-                    provider: ConfigManager.ProviderType? = nil,
+                    provider: Provider.Name? = nil,
                     dryRun: Bool) async {
         do {
             // load config
             let config = try configManager.loadConfig()
 
             // get provider
-            let providerConfig: ConfigManager.Configuration.ProviderConfig
+            let providerConfig: Provider
             if let provider = provider, let config = config.providers[provider] {
                 providerConfig = config
             } else {
@@ -42,11 +42,8 @@ final public class Woqu {
             }
 
             // get api client
-            self.apiClient = try APIClient(
-                apiUrl: providerConfig.apiUrl,
-                apiKey: providerConfig.apiKey,
-                model: providerConfig.model,
-                temperature: providerConfig.temperature,
+            self.apiClient = APIClient(
+                provider: providerConfig,
                 promptTemplates: config.promptTemplates ?? [:]
             )
 

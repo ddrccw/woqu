@@ -14,7 +14,7 @@ public struct RunCommand: AsyncParsableCommand {
     )
 
     @Option(name: .shortAndLong, help: "The provider to use (openai, deepseek, siliconflow)")
-    var provider: ConfigManager.ProviderType?
+    var provider: Provider.Name?
 
     @Option(name: .shortAndLong, help: "The command to execute")
     var command: String?

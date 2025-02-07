@@ -1,29 +1,15 @@
 import Foundation
 
 public actor APIClient {
-    private let apiUrl: URL
-    private let apiKey: String
-    private let session: URLSession
-    private let model: String
-    private let temperature: Double
+    private let provider: Provider
     private let promptTemplates: [String: String]
+    private let session = URLSession.shared
 
     public init(
-        apiUrl: String,
-        apiKey: String,
-        model: String,
-        temperature: Double,
-        promptTemplates: [String: String],
-        session: URLSession = .shared
-    ) throws {
-        guard let url = URL(string: apiUrl) else {
-            throw WoquError.initError(.invalidAPIURL)
-        }
-        self.apiUrl = url
-        self.apiKey = apiKey
-        self.session = session
-        self.model = model
-        self.temperature = temperature
+        provider: Provider,
+        promptTemplates: [String: String]
+    ) {
+        self.provider = provider
         self.promptTemplates = promptTemplates
     }
 
@@ -38,19 +24,19 @@ public actor APIClient {
         }
 
         let parameters: [String: Any] = [
-            "model": self.model,
+            "model": provider.model,
             "messages": [
                 ["role": "user", "content": finalPrompt]
             ],
-            "temperature": self.temperature,
+            "temperature": provider.temperature,
             // "response_format": ["type": "json_object"], siliconflow not support
         ]
 
         print("parameters json: \(parameters.wq_toJSONString() ?? "")")
-        var request = URLRequest(url: apiUrl)
+        var request = URLRequest(url: provider.apiUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(provider.apiKey)", forHTTPHeaderField: "Authorization")
         request.httpBody = try JSONSerialization.data(withJSONObject: parameters)
 
         let (data, response) = try await session.data(for: request)
