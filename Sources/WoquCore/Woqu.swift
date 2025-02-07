@@ -2,7 +2,6 @@ import Foundation
 import ArgumentParser
 import Darwin
 
-@MainActor
 final public class Woqu {
     public init() {}
 

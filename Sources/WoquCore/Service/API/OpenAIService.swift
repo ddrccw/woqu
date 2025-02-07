@@ -7,13 +7,12 @@
 
 import Foundation
 
-actor OpenAIService: @preconcurrency APIService {
+actor OpenAIService: APIService {
     private let provider: Provider
     init(provider: Provider) {
         self.provider = provider
     }
 
-    @MainActor
     func getCompletion(prompt: String) async throws -> CommandSuggestion {
         // Use template if provided
         let finalPrompt = prompt
