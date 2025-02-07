@@ -9,14 +9,17 @@ public actor APIClient {
     private let promptTemplates: [String: String]
 
     public init(
-        apiUrl: URL,
+        apiUrl: String,
         apiKey: String,
         model: String,
         temperature: Double,
         promptTemplates: [String: String],
         session: URLSession = .shared
-    ) {
-        self.apiUrl = apiUrl
+    ) throws {
+        guard let url = URL(string: apiUrl) else {
+            throw WoquError.initError(.invalidAPIURL)
+        }
+        self.apiUrl = url
         self.apiKey = apiKey
         self.session = session
         self.model = model
@@ -54,7 +57,7 @@ public actor APIClient {
 
         guard let httpResponse = response as? HTTPURLResponse,
               httpResponse.statusCode == 200 else {
-            throw WoquError.API.invalidResponse
+            throw WoquError.apiError(.invalidResponse)
         }
 
         return APIResponse(data: data)

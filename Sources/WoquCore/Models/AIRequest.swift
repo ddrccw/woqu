@@ -90,14 +90,6 @@ public struct Usage: WQCodable {
     }
 }
 
-public enum APIError: Error {
-    case notInitialized
-    case invalidResponse
-    case noData
-    case noErrorInHistory(command: String?)
-    case execTimeout(command: String)
-}
-
 public struct CommandSuggestion: WQCodable {
     let explanation: String
     let commands: [Command]
@@ -132,16 +124,6 @@ public struct CommandSuggestion: WQCodable {
         self.init(string: think)
         self.think = think
     }
-
-    static func removeThinkTags(from string: String) -> String {
-        let pattern = "<think[^>]*>|</think>"
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
-            return string
-        }
-        let range = NSRange(location: 0, length: string.utf16.count)
-        return regex.stringByReplacingMatches(in: string, options: [], range: range, withTemplate: "")
-    }
-
 
     struct Command: WQCodable {
         let command: String

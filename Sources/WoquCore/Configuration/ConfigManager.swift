@@ -54,13 +54,10 @@ public struct ConfigManager: Sendable {
 
             // Custom decoding for providers dictionary
             let providersDict = try container.decode([String: ProviderConfig].self, forKey: .providers)
-            self.providers = try providersDict.reduce(into: [ProviderType: ProviderConfig]()) { result, pair in
+            self.providers = providersDict.reduce(into: [ProviderType: ProviderConfig]()) { result, pair in
                 guard let providerType = ProviderType(rawValue: pair.key) else {
-                    throw DecodingError.dataCorruptedError(
-                        forKey: .providers,
-                        in: container,
-                        debugDescription: "Invalid provider type: \(pair.key)"
-                    )
+                    Logger.warning("Invalid provider type: \(pair.key)")
+                    return
                 }
                 result[providerType] = pair.value
             }
@@ -101,7 +98,7 @@ public struct ConfigManager: Sendable {
         let configPath = configDirectory.appendingPathComponent(configFile)
 
         guard FileManager.default.fileExists(atPath: configPath.path) else {
-            throw ConfigError.configFileNotFound
+            throw WoquError.configError(.fileNotFound)
         }
 
         let yamlString = try String(contentsOf: configPath)
@@ -117,9 +114,4 @@ public struct ConfigManager: Sendable {
         try yamlString.write(to: configPath, atomically: true, encoding: .utf8)
     }
 
-    public enum ConfigError: Error {
-        case configFileNotFound
-        case invalidConfigFormat
-        case missingRequiredFields
-    }
 }

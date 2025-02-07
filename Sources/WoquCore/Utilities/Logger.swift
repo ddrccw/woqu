@@ -1,14 +1,8 @@
 import Foundation
 import Rainbow
 
-@globalActor
-public actor LoggerActor { // 自定义的 actor
-    static public let shared = LoggerActor()
-}
-
-@LoggerActor
 public class Logger {
-    public enum Level: String, CaseIterable {
+    public enum Level: String, CaseIterable, Sendable {
         case debug = "DEBUG"
         case info = "INFO"
         case warning = "WARNING"
@@ -33,8 +27,8 @@ public class Logger {
         }
     }
 
-    public static var logLevel: Level = .info
-    public static var showColors = true
+    @TaskLocal public static var logLevel: Level = .info
+    @TaskLocal public static var showColors = true
 
     public static func debug(_ message: String, tag: String = "General", file: String = #file, line: Int = #line) {
         log(level: .debug, message: message, tag: tag, file: file, line: line)

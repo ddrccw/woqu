@@ -2,11 +2,6 @@ import Foundation
 import ArgumentParser
 import Darwin
 
-enum InitializationError: Error {
-    case invalidProvider(provider: ConfigManager.ProviderType)
-    case invalidAPIURL
-}
-
 extension ConfigManager.ProviderType: ExpressibleByArgument {
     public init?(argument: String) {
         if let value = ConfigManager.ProviderType(rawValue: argument.lowercased()) {
@@ -31,47 +26,43 @@ final public class Woqu {
                     provider: ConfigManager.ProviderType? = nil,
                     dryRun: Bool) async {
         do {
-            // 1. 加载配置
+            // load config
             let config = try configManager.loadConfig()
 
-            // 2. 获取provider配置
+            // get provider
             let providerConfig: ConfigManager.Configuration.ProviderConfig
             if let provider = provider, let config = config.providers[provider] {
                 providerConfig = config
             } else {
                 print("Warning: Provider \(String(describing: provider)) not found in config, using default provider \(config.defaultProvider)")
                 guard let defaultConfig = config.providers[config.defaultProvider] else {
-                    throw InitializationError.invalidProvider(provider: config.defaultProvider)
+                    throw WoquError.initError(.invalidProvider(config.defaultProvider))
                 }
                 providerConfig = defaultConfig
             }
 
-            // 3. 初始化API客户端
-            guard let apiUrl = URL(string: providerConfig.apiUrl) else {
-                throw InitializationError.invalidAPIURL
-            }
-
-            self.apiClient = APIClient(
-                apiUrl: apiUrl,
+            // get api client
+            self.apiClient = try APIClient(
+                apiUrl: providerConfig.apiUrl,
                 apiKey: providerConfig.apiKey,
                 model: providerConfig.model,
                 temperature: providerConfig.temperature,
                 promptTemplates: config.promptTemplates ?? [:]
             )
 
-            // 3. 获取历史命令
+            // get command history
             let history = getCommandHistory(command)
 
-            // 4. 调用OpenAI API获取建议
+            // get suggestion from api
             let suggestion: CommandSuggestion = try await getCommandSuggestionWithRetry(history: history)
 
-            // 5. 显示建议
+            // display suggestion
             print("""
             Explanation:
             \(suggestion.explanation)
             """)
 
-            // 6. 询问用户是否执行
+            // ask user to execute commands
             for (index, command) in suggestion.commands.enumerated() {
                 print("""
                 Command \(index + 1):
@@ -89,20 +80,8 @@ final public class Woqu {
             }
 
 
-        } catch ConfigManager.ConfigError.configFileNotFound {
-            print("Error: Configuration file not found. Please run 'woqu setup' to configure.")
-        } catch WoquError.API.invalidResponse {
-            print("Error: Invalid API response. Please check your configuration.")
-        } catch APIError.noData {
-            print("Error: No data received from API. Please check your internet connection.")
-        } catch APIError.noErrorInHistory(let command) {
-            if let command = command {
-                print("Exec \"\(command)\", no recent errors found. Skipping API request.")
-            } else {
-                print("No recent command errors found. Skipping API request.")
-            }
-        } catch APIError.execTimeout(let command) {
-            print("Exec \"\(command)\" timed out. Skipping API request.")
+        } catch let error as WoquError {
+            Logger.error(error.errorDescription ?? "")
         } catch {
             print("Error: \(error.localizedDescription)")
         }
@@ -120,16 +99,16 @@ final public class Woqu {
         // Skip API call if no error output exists
         guard let lastError = historyWithErrors.last,
               let result = lastError.result else {
-            throw APIError.noErrorInHistory(command: nil)
+            throw WoquError.commandError(.execNoError())
         }
 
         // Skip API call if execution timeout
         guard result.exitCode != SIGTERM else {
-            throw APIError.execTimeout(command: lastError.command)
+            throw WoquError.commandError(.timeout(command: lastError.command))
         }
 
         guard result.exitCode != 0 else {
-            throw APIError.noErrorInHistory(command: lastError.command)
+            throw WoquError.commandError(.execNoError(command: lastError.command))
         }
 
         // Create prompt using template
@@ -144,17 +123,17 @@ final public class Woqu {
         for attempt in 1...maxRetries {
             do {
                 guard let apiClient = apiClient else {
-                    throw APIError.notInitialized
+                    throw WoquError.apiError(.notInitialized)
                 }
 
                 // Get suggestion using the formatted prompt
                 guard let response = try await apiClient.getCompletion(prompt: prompt) else {
-                    throw WoquError.API.invalidResponse
+                    throw WoquError.apiError(.invalidResponse)
                 }
 
                 // Validate and parse the response
                 guard !response.choices.isEmpty else {
-                    throw WoquError.API.invalidResponse
+                    throw WoquError.apiError(.invalidResponse)
                 }
 
                 let suggestion = response.choices[0].message.content
@@ -162,7 +141,7 @@ final public class Woqu {
                 // Validate commands
                 for command in suggestion.commands {
                     guard validateCommand(command.command) else {
-                        throw WoquError.API.invalidResponse
+                        throw WoquError.apiError(.invalidResponse)
                     }
                 }
 
@@ -178,7 +157,7 @@ final public class Woqu {
             }
         }
 
-        throw WoquError.API.invalidResponse
+        throw WoquError.apiError(.invalidResponse)
     }
 
     private func validateCommand(_ command: String) -> Bool {
