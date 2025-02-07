@@ -1,7 +1,6 @@
 import Foundation
 import Yams
 
-@MainActor
 public struct ConfigManager: Sendable {
     public static let shared = ConfigManager()
 
@@ -27,18 +26,14 @@ public struct ConfigManager: Sendable {
     ///     apiUrl: "https://api.anthropic.com/v1"
     ///     model: "claude-2"
     ///     temperature: 0.7
-    /// promptTemplates:
-    ///   default: "You are a helpful assistant"
     /// ```
     public struct Configuration: Decodable, Sendable {
         public let defaultProvider: Provider.Name
         public let providers: [Provider.Name: Provider]
-        public let promptTemplates: [String: String]?
 
         enum CodingKeys: String, CodingKey {
             case defaultProvider
             case providers
-            case promptTemplates
         }
 
         public init(from decoder: Decoder) throws {
@@ -53,14 +48,11 @@ public struct ConfigManager: Sendable {
                 }
                 result[providerType] = try Provider(pair.value, name: providerType)
             }
-
-            self.promptTemplates = try container.decodeIfPresent([String: String].self, forKey: .promptTemplates)
         }
 
         public init(defaultProvider: Provider.Name, providers: [Provider.Name: Provider], promptTemplates: [String: String]) {
             self.defaultProvider = defaultProvider
             self.providers = providers
-            self.promptTemplates = promptTemplates
         }
     }
 

@@ -1,36 +1,35 @@
+//
+//  File.swift
+//  woqu
+//
+//  Created by alibaba on 2025/2/7.
+//
+
 import Foundation
 
-public actor APIClient {
+actor OpenAIService: @preconcurrency APIService {
     private let provider: Provider
-    private let promptTemplates: [String: String]
-    private let session = URLSession.shared
-
-    public init(
-        provider: Provider,
-        promptTemplates: [String: String]
-    ) {
+    init(provider: Provider) {
         self.provider = provider
-        self.promptTemplates = promptTemplates
     }
 
-    public func getCompletion(prompt: String, template: String? = nil) async throws -> APIResponse? {
+    @MainActor
+    func getCompletion(prompt: String) async throws -> CommandSuggestion? {
         // Use template if provided
-        let finalPrompt: String
-        if let template = template,
-           let templateString = self.promptTemplates[template] {
-            finalPrompt = String(format: templateString, prompt)
-        } else {
-            finalPrompt = prompt
-        }
+        let finalPrompt = prompt
 
-        let parameters: [String: Any] = [
+        var parameters: [String: Any] = [
             "model": provider.model,
             "messages": [
                 ["role": "user", "content": finalPrompt]
             ],
             "temperature": provider.temperature,
-            // "response_format": ["type": "json_object"], siliconflow not support
         ]
+
+        if provider.name != .siliconflow {
+            // siliconflow not support
+            parameters["response_format"] = ["type": "json_object"]
+        }
 
         print("parameters json: \(parameters.wq_toJSONString() ?? "")")
         var request = URLRequest(url: provider.apiUrl)
@@ -39,14 +38,22 @@ public actor APIClient {
         request.setValue("Bearer \(provider.apiKey)", forHTTPHeaderField: "Authorization")
         request.httpBody = try JSONSerialization.data(withJSONObject: parameters)
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse,
               httpResponse.statusCode == 200 else {
             throw WoquError.apiError(.invalidResponse)
         }
 
-        return APIResponse(data: data)
+        // Validate and parse the response
+        guard let resp = OpenAIResponse(data: data),
+              !resp.choices.isEmpty else {
+            throw WoquError.apiError(.invalidResponse)
+        }
+
+        let suggestion = resp.choices[0].message.content
+
+        return suggestion
+
     }
 }
-

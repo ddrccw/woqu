@@ -29,6 +29,7 @@ public class Logger {
 
     @TaskLocal public static var logLevel: Level = .info
     @TaskLocal public static var showColors = true
+    @TaskLocal public static var terminalBuffer = TerminalBuffer(maxLines: 5)
 
     public static func debug(_ message: String, tag: String = "General", file: String = #file, line: Int = #line) {
         log(level: .debug, message: message, tag: tag, file: file, line: line)
@@ -65,6 +66,6 @@ public class Logger {
             logComponents[3] = message.applyingColor(level.color)
         }
 
-        print(logComponents.joined(separator: " "))
+        terminalBuffer.append(logComponents.joined(separator: " "))
     }
 }

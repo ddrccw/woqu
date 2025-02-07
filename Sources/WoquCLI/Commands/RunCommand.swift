@@ -3,6 +3,16 @@ import ArgumentParser
 import WoquCore
 import Darwin
 
+extension Provider.Name: ExpressibleByArgument {
+    public init?(argument: String) {
+        if let value = Provider.Name(rawValue: argument.lowercased()) {
+            self = value
+        } else {
+            return nil
+        }
+    }
+}
+
 public struct RunCommand: AsyncParsableCommand {
     public static let configuration = CommandConfiguration(
         commandName: "run",
