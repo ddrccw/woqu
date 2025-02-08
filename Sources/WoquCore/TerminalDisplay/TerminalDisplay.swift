@@ -37,19 +37,20 @@ public actor TerminalDisplay {
     public init() {}
 
     private func formatEvent(_ event: TerminalEvent) -> String {
+        let str = isWaiting ? "\n" : ""
         switch event.state {
         case .success:
-            return "✅ \(event.message)".cyan
+            return str + "✅ \(event.message)".cyan
         case .error:
-            return "❎ \(event.message)".red
+            return str + "❎ \(event.message)".red
         case .info:
-            return "ℹ️ \(event.message)".green
+            return str + "ℹ️ \(event.message)".green
         case .subInfo:
-            return "\(event.message)".white
+            return str + "\(event.message)".white
         case .prompt:
-            return "❓ \(event.message)".lightYellow
+            return str + "❓ \(event.message)".lightYellow
         case .waiting:
-            return event.message.yellow
+            return str + event.message.yellow
         }
     }
 

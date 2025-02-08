@@ -14,8 +14,6 @@ class SuggestService {
     private let terminal = TerminalDisplay.shared
 
     init(provider: Provider.Name? = nil) async throws {
-        await terminal.info("Trying to fix your command...")
-
         // load config
         let config = try ConfigManager.shared.loadConfig()
 
@@ -42,7 +40,6 @@ class SuggestService {
         await terminal.info("Analyzing command history...")
         let history = getCommandHistory(command)
 
-        await terminal.startWaiting("Generating command suggestion...")
         let suggestion: CommandSuggestion = try await getCommandSuggestionWithRetry(history: history)
         await terminal.stopWaiting()
 
@@ -81,6 +78,7 @@ class SuggestService {
                 Logger.info("\(askPart) (y/n)")
                 let comfirm = await terminal.confirm(askPart)
                 if comfirm {
+                    await terminal.subInfo("🤖 Executing command...")
                     let result = executeCommand(command.command)
                     await terminal.subInfo(result)
                     Logger.info(result)
@@ -90,7 +88,7 @@ class SuggestService {
                     Logger.info(result)
                 }
                 if index > 0 {
-                    await terminal.clearSubInfo(count: 3)
+                    await terminal.clearSubInfo(count: 4)
                 }
             } else {
                 if index > 0 {
@@ -124,6 +122,8 @@ class SuggestService {
         guard result.exitCode != 0 else {
             throw WoquError.commandError(.execNoError(command: lastError.command))
         }
+
+        await terminal.startWaiting("Generating command suggestion...")
 
         // Create prompt using template
         let prompt = AIPromptTemplate.generatePrompt(

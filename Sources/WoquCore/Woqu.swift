@@ -8,7 +8,18 @@ final public class Woqu {
     public func run(_ command: String?,
                     provider: Provider.Name? = nil,
                     dryRun: Bool) async {
+        // Setup signal handler
+        signal(SIGINT) { _ in
+            let tip = "Received interrupt signal. Exiting gracefully..."
+            Task {
+                await TerminalDisplay.shared.info(tip)
+            }
+            Logger.info(tip)
+            Darwin.exit(0)
+        }
+
         do {
+            await TerminalDisplay.shared.info("Trying to fix your command...")
             let suggestService = try await SuggestService(provider: provider)
             try await suggestService.run(command: command, dryRun: dryRun)
         } catch let error as WoquError {

@@ -58,12 +58,6 @@ public struct RunCommand: AsyncParsableCommand {
     }
 
     func internalRun() async throws {
-        // Setup signal handler
-        signal(SIGINT) { _ in
-            Logger.info("\nReceived interrupt signal. Exiting gracefully...")
-            Darwin.exit(0)
-        }
-
         let woqu = Woqu()
 
         await woqu.run(command, provider: provider, dryRun: dryRun)
