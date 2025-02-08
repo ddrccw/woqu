@@ -54,12 +54,12 @@ public class ZshShell: ShellProtocol {
                 allCommands = allCommandHistory
                     .compactMap { line in
                         guard let (timestamp, command) = parseHistoryLine(line),
-                            command.contains("woqu") == false else {
-                            // print("history cmd invalid line: \(line)")
+                              command.hasPrefix("woqu") == false else {
+                            // Logger.debug("history cmd invalid line: \(line)")
                             return nil
                         }
 
-                        // print("history cmd valid line: \(line)")
+                        // Logger.debug("history cmd valid line: \(line)")
                         return (timestamp, command)
                     }.suffix(10)
             }
@@ -70,6 +70,7 @@ public class ZshShell: ShellProtocol {
             // Execute only the last command
             if let (_, command) = recentCommands.last {
                 historyEntries = recentCommands.map { (ts, cmd) in
+                    Logger.debug("history cmd: \(cmd)")
                     if cmd == command {
                         let result = executeCommand(command)
                         return CommandHistory(
