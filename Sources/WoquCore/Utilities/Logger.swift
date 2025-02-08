@@ -7,7 +7,7 @@ public class Logger {
         case info = "INFO"
         case warning = "WARNING"
         case error = "ERROR"
-        case none
+        case none = "NONE"
 
         // 定义优先级
         var priority: Int {

@@ -82,13 +82,17 @@ class SuggestService {
                     let result = executeCommand(command.command)
                     await terminal.subInfo(result)
                     Logger.info(result)
+                    await terminal.subInfo("🤖 Command executed")
+                    if index > 0 {
+                        await terminal.clearSubInfo(count: 5)
+                    }
                 } else {
-                    let result = "Command not executed"
-                    await terminal.subInfo(result)
+                    let result = "🤖 Command not executed"
                     Logger.info(result)
-                }
-                if index > 0 {
-                    await terminal.clearSubInfo(count: 4)
+                    await terminal.subInfo(result)
+                    if index > 0 {
+                        await terminal.clearSubInfo(count: 4)
+                    }
                 }
             } else {
                 if index > 0 {
@@ -96,6 +100,8 @@ class SuggestService {
                 }
             }
         }
+
+        await terminal.success("🤖 Done 🎉🎉🎉")
     }
 
     func getCommandSuggestionWithRetry(history: [CommandHistory]) async throws -> CommandSuggestion {

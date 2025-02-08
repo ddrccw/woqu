@@ -134,7 +134,7 @@ public actor TerminalDisplay {
         display(TerminalEvent(message: "\(message) (y/n)", state: .prompt),
                 shouldClearLine: false)
         guard let input = readLine()?.lowercased() else { return false }
-        return input == "y" || input == "yes"
+        return input == "y" || input == "yes" || input.isEmpty
     }
 
     private func clearLine(_ shouldClearLine: Bool = true) {

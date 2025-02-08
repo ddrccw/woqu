@@ -33,7 +33,7 @@ public struct RunCommand: AsyncParsableCommand {
         """
     )
 
-    @Option(name: .shortAndLong, help: "The provider to use (openai, deepseek, siliconflow)")
+    @Option(name: .shortAndLong, help: "The provider to use, case insensitive")
     var provider: Provider.Name?
 
     @Option(name: .shortAndLong, help: "The command to execute")
@@ -42,7 +42,7 @@ public struct RunCommand: AsyncParsableCommand {
     @Option(name: .shortAndLong, help: "Dry run mode")
     var dryRun: Bool = false
 
-    @Option(name: .shortAndLong, help: "Log level, e.g. debug, info, warning, error")
+    @Option(name: .shortAndLong, help: "Log level, case insensitive")
     var logLevel: Logger.Level?
 
     public init() {}

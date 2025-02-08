@@ -14,7 +14,7 @@ struct ProviderData: Codable, Sendable {
 }
 
 public struct Provider: Sendable {
-    public enum Name: String, Codable, Sendable {
+    public enum Name: String, Codable, CaseIterable, Sendable {
         case deepseek = "deepseek"
         case openai = "openai"
         case siliconflow = "siliconflow"
