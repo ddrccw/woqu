@@ -5,7 +5,7 @@
 A command correction tool inspired by [`thefuck`](https://github.com/nvbn/thefuck), focusing on providing AI-powered suggestions through shell integration. Currently experimental and optimized for macOS environments.
 
 [![asciinema CLI
-demo](https://asciinema.org/a/DSRAiZuBjwxas8kmPc7WuSDLs.svg)](https://asciinema.org/a/DSRAiZuBjwxas8kmPc7WuSDLs?autoplay=1)
+demo](https://asciinema.org/a/zAYgjn7F99Rl13WvMMzBYgrDr.svg)](https://asciinema.org/a/zAYgjn7F99Rl13WvMMzBYgrDr?autoplay=1)
 
 
 ## Features
