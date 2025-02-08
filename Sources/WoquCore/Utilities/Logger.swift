@@ -29,7 +29,6 @@ public class Logger {
 
     @TaskLocal public static var logLevel: Level = .info
     @TaskLocal public static var showColors = true
-    @TaskLocal public static var terminalBuffer = TerminalBuffer(maxLines: 5)
     static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
@@ -71,10 +70,6 @@ public class Logger {
             finalMessage = finalMessage.applyingColor(level.color)
         }
 
-        #if DEBUG
         print(finalMessage)
-        #else
-        terminalBuffer.append(finalMessage)
-        #endif
     }
 }
