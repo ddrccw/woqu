@@ -11,8 +11,11 @@ class SuggestService {
     private let apiClient: APIClient
     private let maxRetries = 3
     private let retryDelay: UInt64 = 1_000_000_000 // 1 second in nanoseconds
+    private let terminal = TerminalDisplay.shared
 
-    init(provider: Provider.Name? = nil) throws {
+    init(provider: Provider.Name? = nil) async throws {
+        await terminal.info("Trying to fix your command...")
+
         // load config
         let config = try ConfigManager.shared.loadConfig()
 
@@ -36,39 +39,62 @@ class SuggestService {
 
     func run(command: String?, dryRun: Bool) async throws {
         // get command history
+        await terminal.info("Analyzing command history...")
         let history = getCommandHistory(command)
 
+        await terminal.startWaiting("Generating command suggestion...")
         let suggestion: CommandSuggestion = try await getCommandSuggestionWithRetry(history: history)
+        await terminal.stopWaiting()
+
+        await terminal.info("Get Command suggestions:")
 
         // display reason
         if let think = suggestion.think {
-            Logger.info("""
+            let reasonPart = """
             Reason:
             \(think)
-            """)
+            """
+            Logger.info(reasonPart)
+            await terminal.subInfo(reasonPart)
         }
 
         // display suggestion
-        Logger.info("""
+        let explanationPart = """
         Explanation:
         \(suggestion.explanation)
-        """)
+        """
+        Logger.info(explanationPart)
+        await terminal.subInfo(explanationPart)
 
         // ask user to execute commands
         for (index, command) in suggestion.commands.enumerated() {
-            Logger.info("""
+            let commandPart = """
             Command \(index + 1):
             \(command.command)
             Description: \(command.description)
-            """)
+            """
+            Logger.info(commandPart)
+            await terminal.subInfo(commandPart)
 
             if !dryRun {
-                Logger.info("Execute command '\(command.command)'? (y/n)")
-                if let input = readLine(), input.lowercased() == "y" {
+                let askPart = "Execute command '\(command.command)'?"
+                Logger.info("\(askPart) (y/n)")
+                let comfirm = await terminal.confirm(askPart)
+                if comfirm {
                     let result = executeCommand(command.command)
+                    await terminal.subInfo(result)
                     Logger.info(result)
                 } else {
-                    Logger.info("Command not executed")
+                    let result = "Command not executed"
+                    await terminal.subInfo(result)
+                    Logger.info(result)
+                }
+                if index > 0 {
+                    await terminal.clearSubInfo(count: 3)
+                }
+            } else {
+                if index > 0 {
+                    await terminal.clearSubInfo(count: 1)
                 }
             }
         }

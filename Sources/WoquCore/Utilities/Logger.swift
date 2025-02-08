@@ -7,6 +7,18 @@ public class Logger {
         case info = "INFO"
         case warning = "WARNING"
         case error = "ERROR"
+        case none
+
+        // 定义优先级
+        var priority: Int {
+            switch self {
+            case .debug: return 0
+            case .info: return 1
+            case .warning: return 2
+            case .error: return 3
+            case .none: return 4
+            }
+        }
 
         var color: Color {
             switch self {
@@ -14,6 +26,7 @@ public class Logger {
             case .info: return .green
             case .warning: return .yellow
             case .error: return .red
+            case .none: return .white
             }
         }
 
@@ -23,11 +36,12 @@ public class Logger {
             case .info: return "✅"
             case .warning: return "⚠️"
             case .error: return "❌"
+            case .none: return ""
             }
         }
     }
 
-    @TaskLocal public static var logLevel: Level = .info
+    @TaskLocal public static var logLevel: Level = .none
     @TaskLocal public static var showColors = true
     static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -52,7 +66,7 @@ public class Logger {
     }
 
     private static func log(level: Level, message: String, tag: String, file: String, line: Int) {
-        guard level.rawValue >= logLevel.rawValue else { return }
+        guard level.priority >= logLevel.priority else { return }
 
         let timestamp = dateFormatter.string(from: Date())
         let fileName = URL(fileURLWithPath: file).lastPathComponent
