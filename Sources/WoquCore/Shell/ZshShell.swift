@@ -104,8 +104,6 @@ public class ZshShell: ShellProtocol {
         process.standardOutput = outputPipe
         process.standardError = errorPipe
 
-        // 使用原子队列保护共享变量
-        let queue = DispatchQueue(label: "com.woqu.syncQueue")
         var output = ""
         var errorOutput = ""
         var exitCode: Int32 = 0
@@ -115,33 +113,30 @@ public class ZshShell: ShellProtocol {
         do {
             try process.run()
 
-            // 使用 weak 避免循环引用
-            let timeoutWorkItem = DispatchWorkItem { [weak process, weak queue] in
-                queue?.sync {
-                    if let process = process, process.isRunning {
-                        timedOut = true
-                        kill(process.processIdentifier, SIGTERM)
-                    }
+            // Create a task to handle the timeout
+            let timeoutTask = Task {
+                try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                if process.isRunning {
+                    timedOut = true
+                    kill(process.processIdentifier, SIGTERM)
                 }
             }
 
-            // 在全局队列安排超时
-            DispatchQueue.global().asyncAfter(deadline: .now() + timeout, execute: timeoutWorkItem)
-
+            // Wait for the process to finish
             process.waitUntilExit()
-            timeoutWorkItem.cancel() // 如果进程提前完成，取消超时任务
 
-            queue.sync {
-                if timedOut {
-                    errorOutput = "Command timed out after \(timeout) seconds"
-                    exitCode = process.terminationStatus
-                } else {
-                    let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
-                    let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
-                    output = String(data: outputData, encoding: .utf8) ?? ""
-                    errorOutput = String(data: errorData, encoding: .utf8) ?? ""
-                    exitCode = process.terminationStatus
-                }
+            // Cancel the timeout task if the process completed before the timeout
+            timeoutTask.cancel()
+
+            if timedOut {
+                errorOutput = "Command timed out after \(timeout) seconds"
+                exitCode = process.terminationStatus
+            } else {
+                let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
+                let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
+                output = String(data: outputData, encoding: .utf8) ?? ""
+                errorOutput = String(data: errorData, encoding: .utf8) ?? ""
+                exitCode = process.terminationStatus
             }
         } catch {
             Logger.error("Failed to execute Zsh command: \(error)")
