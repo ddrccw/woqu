@@ -49,7 +49,9 @@ providers:
 
 ## TODO
 
-- [ ] bash, fish, tcsh support
+- [ ] bash support
+- [ ] fish support
+- [ ] tcsh support
 - [ ] Cross-platform support (Linux/Windows WSL)
 - [ ] `woqu config` interactive configuration command
 - [ ] Additional AI providers (Anthropic, Gemini, Azure OpenAI, etc.)

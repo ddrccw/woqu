@@ -1,12 +1,9 @@
 import Foundation
 
 public class BashShell: ShellProtocol {
-    public let historyFilePath: String
     private var commandOutputCache: [String: String] = [:]
 
-    public init(historyFilePath: String = "\(NSHomeDirectory())/.bash_history") {
-        self.historyFilePath = historyFilePath
-    }
+    public init() {}
 
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -26,51 +23,46 @@ public class BashShell: ShellProtocol {
 
     public func getCommandHistory(_ command: String?) -> [CommandHistory] {
         // Implementation similar to ZshShell but with Bash specific parsing
-        do {
-            let allCommands: [(Date, String)]
-            if let command = command {
-                allCommands = [
-                    (Date.now, command)
-                ]
-            } else {
-                let historyContent = try String(contentsOfFile: historyFilePath, encoding: .utf8)
-                let allCommandHistory = historyContent.components(separatedBy: "\n")
-                allCommands = allCommandHistory
-                    .compactMap { line in
-                        guard let (timestamp, command) = parseHistoryLine(line),
-                              command.contains("woqu") == false else {
-                            return nil
-                        }
-                        return (timestamp, command)
-                    }.suffix(10)
-            }
-
-            let recentCommands = Array(allCommands)
-            var historyEntries: [CommandHistory] = []
-
-            if let (_, command) = recentCommands.last {
-                historyEntries = recentCommands.map { (ts, cmd) in
-                    if cmd == command {
-                        let result = executeCommand(command)
-                        return CommandHistory(
-                            command: cmd,
-                            result: result,
-                            timestamp: ts
-                        )
+        let allCommands: [(Date, String)]
+        if let command = command {
+            allCommands = [
+                (Date.now, command)
+            ]
+        } else {
+            let result = executeCommand("fc -ln -10")
+            let allCommandHistory = result.output.components(separatedBy: "\n")
+            allCommands = allCommandHistory
+                .compactMap { line in
+                    let command = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !command.isEmpty, !command.contains("woqu") else {
+                        return nil
                     }
+                    return (Date.now, command)
+                }
+        }
+
+        let recentCommands = Array(allCommands)
+        var historyEntries: [CommandHistory] = []
+
+        if let (_, command) = recentCommands.last {
+            historyEntries = recentCommands.map { (ts, cmd) in
+                if cmd == command {
+                    let result = executeCommand(command)
                     return CommandHistory(
                         command: cmd,
-                        result: nil,
+                        result: result,
                         timestamp: ts
                     )
                 }
+                return CommandHistory(
+                    command: cmd,
+                    result: nil,
+                    timestamp: ts
+                )
             }
-
-            return historyEntries
-        } catch {
-            Logger.error("Error reading history file: \(error)")
-            return []
         }
+
+        return historyEntries
     }
 
     public func executeCommand(_ command: String) -> CommandResult {

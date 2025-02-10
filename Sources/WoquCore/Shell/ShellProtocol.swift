@@ -1,9 +1,6 @@
 import Foundation
 
 public protocol ShellProtocol {
-    /// Path to the shell's history file
-    var historyFilePath: String { get }
-
     /// Get formatted command history
     func getCommandHistory(_ command: String?) -> [CommandHistory]
 
@@ -26,11 +23,3 @@ public struct CommandResult {
     public let exitCode: Int32
 }
 
-extension ShellProtocol {
-    /// Default implementation to get history file path from environment
-    public var historyFilePath: String {
-        return ProcessInfo.processInfo.environment["HISTFILE"]
-            ?? FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent(".zsh_history").path
-    }
-}

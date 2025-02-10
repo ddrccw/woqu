@@ -1,12 +1,15 @@
 import Foundation
 
 public class ZshShell: ShellProtocol {
-    public let historyFilePath: String
     private var commandOutputCache: [String: String] = [:]
+    private let historyFilePath: String = {
+        return ProcessInfo.processInfo.environment["HISTFILE"]
+            ?? FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent(".zsh_history").path
+    }()
 
-    public init(historyFilePath: String = "\(NSHomeDirectory())/.zsh_history") {
-        self.historyFilePath = historyFilePath
-    }
+    public init() {}
+    
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
