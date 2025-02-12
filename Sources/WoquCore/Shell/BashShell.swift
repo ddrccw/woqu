@@ -11,34 +11,58 @@ public class BashShell: ShellProtocol {
         return formatter
     }()
 
-    public func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
-        // Bash history format: simple command per line
-        let command = line.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !command.isEmpty else { return nil }
+    public func generateAliasFunction(name: String) -> String {
+       return """
+       \(name)() {
+           export WQ_HISTORY="$(history)"
+           command woqu "$@"
+           unset WQ_HISTORY
+       }
+       """
+    }
 
-        // Bash doesn't store timestamps in history file by default
-        // Use current time as fallback
+    public func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
+        // Bash history format: [number] command or command
+        let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedLine.isEmpty else { return nil }
+
+        // Split into components
+        let components = trimmedLine.components(separatedBy: .whitespaces)
+
+        // Extract command
+        let command: String
+        if components.count > 1 && components[0].rangeOfCharacter(from: .decimalDigits) != nil {
+            // Format with number: [number] command
+            command = components.dropFirst().joined(separator: " ")
+        } else {
+            // Simple command format
+            command = trimmedLine
+        }
+
         return (Date.now, command)
     }
 
     public func getCommandHistory(_ command: String?) -> [CommandHistory] {
-        // Implementation similar to ZshShell but with Bash specific parsing
         let allCommands: [(Date, String)]
         if let command = command {
             allCommands = [
                 (Date.now, command)
             ]
         } else {
-            let result = executeCommand("fc -ln -10")
-            let allCommandHistory = result.output.components(separatedBy: "\n")
+            let history = ProcessInfo.processInfo.environment["WQ_HISTORY"] ?? ""
+            let allCommandHistory = history.components(separatedBy: "\n")
             allCommands = allCommandHistory
                 .compactMap { line in
-                    let command = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !command.isEmpty, !command.contains("woqu") else {
+                    guard let (date, command) = parseHistoryLine(line) else {
                         return nil
                     }
-                    return (Date.now, command)
-                }
+                    // Filter out woqu commands with or without paths
+                    let woquPattern: String = #"(^|\s)(/.*/)?woqu(\s|$)"#
+                    if command.range(of: woquPattern, options: .regularExpression) != nil {
+                        return nil
+                    }
+                    return (date, command)
+                }.suffix(10)
         }
 
         let recentCommands = Array(allCommands)

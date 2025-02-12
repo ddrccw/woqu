@@ -14,6 +14,10 @@ public class FishShell: ShellProtocol {
         return formatter
     }()
 
+    public func generateAliasFunction(name: String) -> String {
+        return ""
+    }
+
     public func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
         // Fish history format: JSON with timestamp and command
         guard let data = line.data(using: .utf8),

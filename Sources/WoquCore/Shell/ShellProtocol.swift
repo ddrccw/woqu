@@ -1,6 +1,9 @@
 import Foundation
 
 public protocol ShellProtocol {
+    /// Generate shell alias function
+    func generateAliasFunction(name: String) -> String
+
     /// Get formatted command history
     func getCommandHistory(_ command: String?) -> [CommandHistory]
 
@@ -22,4 +25,3 @@ public struct CommandResult {
     public let errorOutput: String
     public let exitCode: Int32
 }
-

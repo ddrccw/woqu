@@ -16,6 +16,11 @@ public class ZshShell: ShellProtocol {
         return formatter
     }()
 
+    public func generateAliasFunction(name: String) -> String {
+        return ""
+    }
+
+
     public func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
         // Zsh history format: ": <timestamp>:<seconds>;<command>"
         let components = line.components(separatedBy: ";")
