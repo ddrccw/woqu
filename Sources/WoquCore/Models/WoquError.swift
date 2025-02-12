@@ -25,10 +25,20 @@ public enum WoquError: Error, LocalizedError {
 
     // Initialization related errors
     public enum InitErrorReason: LocalizedError {
+        case shellNotConfigured(ShellType)
         case invalidProvider(Provider.Name)
 
         public var errorDescription: String? {
             switch self {
+            case .shellNotConfigured(let shellType):
+                if shellType == .bash {
+                    return """
+                    Shell not configured, please add this to your `~/.bashrc` or `~/.bash_profile`:
+                    
+                    eval "$(command woqu alias)"
+                    """
+                }
+                return "Shell not configured"
             case .invalidProvider(let provider):
                 return "Invalid provider: \(provider.rawValue)"
             }

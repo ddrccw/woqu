@@ -12,6 +12,7 @@ class SuggestService {
     private let maxRetries = 3
     private let retryDelay: UInt64 = 1_000_000_000 // 1 second in nanoseconds
     private let terminal = TerminalDisplay.shared
+    private let shell = ShellFactory.createShell()
 
     init(provider: Provider.Name? = nil) async throws {
         // load config
@@ -36,6 +37,10 @@ class SuggestService {
     }
 
     func run(command: String?, dryRun: Bool) async throws {
+        guard shell.isConfigured() else {
+            throw WoquError.initError(.shellNotConfigured(shell.type))
+        }
+
         // get command history
         await terminal.info("Analyzing command history...")
         let history = getCommandHistory(command)
@@ -144,6 +149,7 @@ class SuggestService {
                 return suggestion
             } catch {
                 Logger.debug("getCommandSuggestionWithRetry: \(error)")
+                await terminal.error("Fail to generating command suggestion, try again...")
 
                 if attempt < maxRetries {
                     Logger.info("Retrying in 1 second... (attempt \(attempt)/\(maxRetries))")
@@ -163,12 +169,10 @@ class SuggestService {
     }
 
     private func getCommandHistory(_ command: String?) -> [CommandHistory] {
-        let shell = ShellFactory.createShell()
         return shell.getCommandHistory(command)
     }
 
     private func executeCommand(_ command: String) -> String {
-        let shell = ShellFactory.createShell()
         let result = shell.executeCommand(command)
         if result.exitCode == 0 {
             return result.output

@@ -27,6 +27,20 @@ swift build -c release
 install .build/release/woqu /usr/local/bin/
 ```
 
+## Shell Integration
+
+For bash users, add this to your `~/.bashrc` or `~/.bash_profile`:
+
+```bash
+eval "$(command woqu alias)"
+```
+
+Then either:
+```bash
+source ~/.bashrc  # or source ~/.bash_profile
+```
+or restart your terminal session.
+
 ## Configuration
 
 Create `~/.config/woqu/settings.yml`:
@@ -49,7 +63,7 @@ providers:
 
 ## TODO
 
-- [ ] bash support
+- [x] bash support ✔️
 - [ ] fish support
 - [ ] tcsh support
 - [ ] Cross-platform support (Linux/Windows WSL)
@@ -60,3 +74,4 @@ providers:
 ## License
 
 This code repository is licensed under [ the MIT License ](https://opensource.org/licenses/MIT).
+git clone https://github.com/ddrccw

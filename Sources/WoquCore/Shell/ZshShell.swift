@@ -1,6 +1,6 @@
 import Foundation
 
-public class ZshShell: ShellProtocol {
+public class ZshShell: Shell {
     private var commandOutputCache: [String: String] = [:]
     private let historyFilePath: String = {
         return ProcessInfo.processInfo.environment["HISTFILE"]
@@ -8,20 +8,22 @@ public class ZshShell: ShellProtocol {
                 .appendingPathComponent(".zsh_history").path
     }()
 
-    public init() {}
-    
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return formatter
     }()
 
-    public func generateAliasFunction(name: String) -> String {
+    public override func isConfigured() -> Bool {
+        return true
+    }
+
+    public override func generateAliasFunction(name: String) -> String {
         return ""
     }
 
 
-    public func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
+    public override func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
         // Zsh history format: ": <timestamp>:<seconds>;<command>"
         let components = line.components(separatedBy: ";")
         guard components.count == 2 else { return nil }
@@ -40,7 +42,7 @@ public class ZshShell: ShellProtocol {
         return (timestamp, command)
     }
 
-    public func getCommandHistory(_ command: String?) -> [CommandHistory] {
+    public override func getCommandHistory(_ command: String?) -> [CommandHistory] {
         // Read history file directly for more accurate timestamps
         do {
             let allCommands: [(Date, String)]
@@ -61,9 +63,14 @@ public class ZshShell: ShellProtocol {
                 let allCommandHistory = historyContent.components(separatedBy: "\n")
                 allCommands = allCommandHistory
                     .compactMap { line in
-                        guard let (timestamp, command) = parseHistoryLine(line),
-                              command.hasPrefix("woqu") == false else {
+                        guard let (timestamp, command) = parseHistoryLine(line) else {
                             // Logger.debug("history cmd invalid line: \(line)")
+                            return nil
+                        }
+
+                        // Filter out woqu commands with or without paths
+                        let woquPattern: String = #"(^|\s)(/.*/)?woqu(\s|$)"#
+                        if command.range(of: woquPattern, options: .regularExpression) != nil {
                             return nil
                         }
 
@@ -102,7 +109,7 @@ public class ZshShell: ShellProtocol {
         }
     }
 
-    public func executeCommand(_ command: String) -> CommandResult {
+    public override func executeCommand(_ command: String) -> CommandResult {
         let process = Process()
         let outputPipe = Pipe()
         let errorPipe = Pipe()

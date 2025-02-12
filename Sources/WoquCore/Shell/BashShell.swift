@@ -1,9 +1,7 @@
 import Foundation
 
-public class BashShell: ShellProtocol {
+public class BashShell: Shell {
     private var commandOutputCache: [String: String] = [:]
-
-    public init() {}
 
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -11,7 +9,12 @@ public class BashShell: ShellProtocol {
         return formatter
     }()
 
-    public func generateAliasFunction(name: String) -> String {
+    public override func isConfigured() -> Bool {
+        // TODO
+        return true
+    }
+
+    public override func generateAliasFunction(name: String) -> String {
        return """
        \(name)() {
            export WQ_HISTORY="$(history)"
@@ -21,7 +24,7 @@ public class BashShell: ShellProtocol {
        """
     }
 
-    public func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
+    public override func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
         // Bash history format: [number] command or command
         let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedLine.isEmpty else { return nil }
@@ -42,7 +45,7 @@ public class BashShell: ShellProtocol {
         return (Date.now, command)
     }
 
-    public func getCommandHistory(_ command: String?) -> [CommandHistory] {
+    public override func getCommandHistory(_ command: String?) -> [CommandHistory] {
         let allCommands: [(Date, String)]
         if let command = command {
             allCommands = [
@@ -89,7 +92,7 @@ public class BashShell: ShellProtocol {
         return historyEntries
     }
 
-    public func executeCommand(_ command: String) -> CommandResult {
+    public override func executeCommand(_ command: String) -> CommandResult {
         let process = Process()
         let outputPipe = Pipe()
         let errorPipe = Pipe()

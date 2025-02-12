@@ -112,22 +112,22 @@ public class ShellFactory {
         return nil
     }
 
-    public static func createShell(type: ShellType? = nil) -> ShellProtocol {
+    public static func createShell(type: ShellType? = nil) -> Shell {
         let shellType = type ?? detectCurrentShell()
         // TODO: Other shell classes are generated code
         //       which need manual fixes to work properly
         Logger.debug("Detected shell type: \(shellType ?? .zsh)")
         switch shellType {
         case .zsh:
-            return ZshShell()
+            return ZshShell(type: .zsh)
         case .bash:
-            return BashShell()
+            return BashShell(type: .bash)
         case .fish:
             fallthrough
             // return FishShell()
         default:
             // TODO
-            return ZshShell()
+            return ZshShell(type: .zsh)
         }
     }
 }

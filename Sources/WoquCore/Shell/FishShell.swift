@@ -1,12 +1,12 @@
 import Foundation
 
-public class FishShell: ShellProtocol {
-    public let historyFilePath: String
+public class FishShell: Shell {
     private var commandOutputCache: [String: String] = [:]
-
-    public init(historyFilePath: String = "\(NSHomeDirectory())/.local/share/fish/fish_history") {
-        self.historyFilePath = historyFilePath
-    }
+    private let historyFilePath: String = {
+        return ProcessInfo.processInfo.environment["HISTFILE"]
+            ?? FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent(".fish_history").path
+    }()
 
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -14,11 +14,7 @@ public class FishShell: ShellProtocol {
         return formatter
     }()
 
-    public func generateAliasFunction(name: String) -> String {
-        return ""
-    }
-
-    public func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
+    public override func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
         // Fish history format: JSON with timestamp and command
         guard let data = line.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -30,7 +26,7 @@ public class FishShell: ShellProtocol {
         return (Date(timeIntervalSince1970: timestamp), command)
     }
 
-    public func getCommandHistory(_ command: String?) -> [CommandHistory] {
+    public override func getCommandHistory(_ command: String?) -> [CommandHistory] {
         do {
             let allCommands: [(Date, String)]
             if let command = command {
@@ -78,7 +74,7 @@ public class FishShell: ShellProtocol {
         }
     }
 
-    public func executeCommand(_ command: String) -> CommandResult {
+    public override func executeCommand(_ command: String) -> CommandResult {
         let process = Process()
         let outputPipe = Pipe()
         let errorPipe = Pipe()
