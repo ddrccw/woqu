@@ -69,6 +69,7 @@ class SuggestService {
         await terminal.subInfo(explanationPart)
 
         // ask user to execute commands
+        var done = false
         for (index, command) in suggestion.commands.enumerated() {
             let commandPart = """
             Command \(index + 1):
@@ -88,6 +89,7 @@ class SuggestService {
                     await terminal.subInfo(result)
                     Logger.info(result)
                     await terminal.subInfo("🤖 Command executed")
+                    done = true
                 } else {
                     let result = "🤖 Command not executed"
                     Logger.info(result)
@@ -96,7 +98,9 @@ class SuggestService {
             }
         }
 
-        await terminal.success("🤖 Done 🎉🎉🎉")
+        if done {
+            await terminal.success("🤖 Done 🎉🎉🎉")
+        }
     }
 
     func getCommandSuggestionWithRetry(history: [CommandHistory]) async throws -> CommandSuggestion {

@@ -10,16 +10,16 @@ public class BashShell: Shell {
     }()
 
     public override func isConfigured() -> Bool {
-        // TODO
-        return true
+        return ProcessInfo.processInfo.environment["WQ_ALIAS"] == "woqu"
     }
 
     public override func generateAliasFunction(name: String) -> String {
        return """
        \(name)() {
+           export WQ_ALIAS="woqu"
            export WQ_HISTORY="$(history)"
            command woqu "$@"
-           unset WQ_HISTORY
+           unset WQ_HISTORY WQ_ALIAS
        }
        """
     }
