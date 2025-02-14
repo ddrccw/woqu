@@ -12,7 +12,7 @@ public struct AliasCommand: ParsableCommand {
 
     public func run() throws {
         // Create appropriate shell instance
-        let shell = ShellFactory.createShell()
+        let shell = try ShellFactory.createShell()
 
         // Generate and inject shell function
         let aliasFunction = shell.generateAliasFunction(name: "woqu")

@@ -112,22 +112,20 @@ public class ShellFactory {
         return nil
     }
 
-    public static func createShell(type: ShellType? = nil) -> Shell {
-        let shellType = type ?? detectCurrentShell()
-        // TODO: Other shell classes are generated code
-        //       which need manual fixes to work properly
-        Logger.debug("Detected shell type: \(shellType ?? .zsh)")
+    public static func createShell(type: ShellType? = nil) throws -> Shell {
+        guard let shellType = type ?? detectCurrentShell() else {
+            throw WoquError.commandError(.shellNotSupported())
+        }
+        Logger.debug("Detected shell type: \(shellType)")
         switch shellType {
         case .zsh:
             return ZshShell(type: .zsh)
         case .bash:
             return BashShell(type: .bash)
         case .fish:
-            fallthrough
-            // return FishShell()
+            return FishShell(type: .fish)
         default:
-            // TODO
-            return ZshShell(type: .zsh)
+            throw WoquError.commandError(.shellNotSupported(shellType))
         }
     }
 }

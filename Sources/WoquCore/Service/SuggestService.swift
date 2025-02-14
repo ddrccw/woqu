@@ -2,7 +2,7 @@
 //  File.swift
 //  woqu
 //
-//  Created by alibaba on 2025/2/7.
+//  Created by ddrccw on 2025/2/7.
 //
 
 import Foundation
@@ -12,7 +12,7 @@ class SuggestService {
     private let maxRetries = 3
     private let retryDelay: UInt64 = 1_000_000_000 // 1 second in nanoseconds
     private let terminal = TerminalDisplay.shared
-    private let shell = ShellFactory.createShell()
+    private let shell: Shell
 
     init(provider: Provider.Name? = nil) async throws {
         // load config
@@ -34,6 +34,9 @@ class SuggestService {
         self.apiClient = APIClient(
             provider: providerConfig
         )
+
+        // create shell
+        shell = try ShellFactory.createShell()
     }
 
     func run(command: String?, dryRun: Bool) async throws {
