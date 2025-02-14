@@ -70,6 +70,8 @@ public enum WoquError: Error, LocalizedError {
     public enum CommandErrorReason: LocalizedError {
         public var errorDescription: String? {
             switch self {
+            case .shellNotSupported(let shellType):
+                return "Shell not supported: \(shellType?.rawValue ?? "unknown")"
             case .suggestFailed(let command):
                 return "Command failed: \(command)"
             case .timeout(let command):
@@ -84,6 +86,8 @@ public enum WoquError: Error, LocalizedError {
                 }
             }
         }
+
+        case shellNotSupported(ShellType? = nil)
         case suggestFailed(String)
         case timeout(command: String)
         case invalidCommand(String)
