@@ -1,11 +1,12 @@
 import Foundation
+import Yams
 
 public class FishShell: Shell {
     private var commandOutputCache: [String: String] = [:]
     private let historyFilePath: String = {
-        return ProcessInfo.processInfo.environment["HISTFILE"]
+        return ProcessInfo.processInfo.environment["fish_history"]
             ?? FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent(".fish_history").path
+                .appendingPathComponent(".local/share/fish/fish_history").path
     }()
 
     private let dateFormatter: DateFormatter = {
@@ -15,11 +16,13 @@ public class FishShell: Shell {
     }()
 
     public override func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
-        // Fish history format: JSON with timestamp and command
-        guard let data = line.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let command = json["cmd"] as? String,
-              let timestamp = json["when"] as? Double else {
+        // Fish history is yaml formatted:
+        // - cmd: command
+        //   when: Unix timestamp
+        //   paths: related file paths (optional)
+        guard let yaml = try? Yams.load(yaml: line) as? [String: Any],
+              let command = yaml["cmd"] as? String,
+              let timestamp = yaml["when"] as? Double else {
             return nil
         }
 
