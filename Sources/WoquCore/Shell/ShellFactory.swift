@@ -119,11 +119,11 @@ public class ShellFactory {
         Logger.debug("Detected shell type: \(shellType)")
         switch shellType {
         case .zsh:
-            return ZshShell(type: .zsh)
+            return try ZshShell(type: .zsh)
         case .bash:
-            return BashShell(type: .bash)
+            return try BashShell(type: .bash)
         case .fish:
-            return FishShell(type: .fish)
+            return try FishShell(type: .fish)
         default:
             throw WoquError.commandError(.shellNotSupported(shellType))
         }

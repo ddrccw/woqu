@@ -51,7 +51,7 @@ public class Shell: ShellProtocol {
     }
 
     public let type : ShellType
-    required init(type : ShellType) {
+    required init(type : ShellType) throws {
         self.type = type
     }
 

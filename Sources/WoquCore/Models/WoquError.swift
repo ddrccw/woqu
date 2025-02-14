@@ -26,10 +26,13 @@ public enum WoquError: Error, LocalizedError {
     // Initialization related errors
     public enum InitErrorReason: LocalizedError {
         case shellNotConfigured(ShellType)
+        case shellNotFound(String)
         case invalidProvider(Provider.Name)
 
         public var errorDescription: String? {
             switch self {
+            case .shellNotFound(let path):
+                return "Shell not found: \(path)"
             case .shellNotConfigured(let shellType):
                 if shellType == .bash {
                     return """

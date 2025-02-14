@@ -5,15 +5,25 @@ public class FishShell: Shell {
     private var commandOutputCache: [String: String] = [:]
     private let historyFilePath: String = {
         return ProcessInfo.processInfo.environment["fish_history"]
-            ?? FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent(".local/share/fish/fish_history").path
+        ?? FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".local/share/fish/fish_history").path
     }()
 
+    private var fishPath: String = ""
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return formatter
     }()
+
+    required init(type: ShellType) throws {
+        try super.init(type: type)
+        guard let fishPath = getFishPath(),
+              FileManager.default.fileExists(atPath: fishPath) else {
+            throw WoquError.initError(.shellNotFound(fishPath))
+        }
+        self.fishPath = fishPath
+    }
 
     public override func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
         // Fish history is yaml formatted:
@@ -82,7 +92,7 @@ public class FishShell: Shell {
         let outputPipe = Pipe()
         let errorPipe = Pipe()
 
-        process.executableURL = URL(fileURLWithPath: "/usr/local/bin/fish")
+        process.executableURL = URL(fileURLWithPath: fishPath)
         process.arguments = ["-c", command]
         process.environment = ProcessInfo.processInfo.environment
         process.standardOutput = outputPipe
@@ -127,5 +137,19 @@ public class FishShell: Shell {
         return CommandResult(output: output,
                              errorOutput: errorOutput,
                              exitCode: exitCode)
+    }
+
+    private func getFishPath() -> String? {
+        let process = Process()
+        let pipe = Pipe()
+
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/which")
+        process.arguments = ["fish"]
+        process.standardOutput = pipe
+
+        try? process.run()
+
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        return String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
