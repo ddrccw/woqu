@@ -12,9 +12,6 @@ public protocol ShellProtocol {
 
     /// Execute a shell command
     func executeCommand(_ command: String) -> CommandResult
-
-    /// Parse a raw history line into command components
-    func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)?
 }
 
 public struct CommandHistory {
@@ -46,10 +43,6 @@ public class Shell: ShellProtocol {
         fatalError("executeCommand not implemented")
     }
     
-    public func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
-        fatalError("parseHistoryLine not implemented")
-    }
-
     public let type : ShellType
     required init(type : ShellType) throws {
         self.type = type

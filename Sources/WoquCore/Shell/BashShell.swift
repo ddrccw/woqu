@@ -24,7 +24,7 @@ public class BashShell: Shell {
        """
     }
 
-    public override func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
+    private func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
         // Bash history format: [number] command or command
         let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedLine.isEmpty else { return nil }

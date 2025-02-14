@@ -103,8 +103,8 @@ public enum WoquError: Error, LocalizedError {
             switch self {
             case .notInitialized:
                 return "API not properly initialized"
-            case .invalidResponse:
-                return "Invalid API response"
+            case .invalidResponse(let desc):
+                return "Invalid API response: \(desc)"
             case .parsingError(let detail):
                 return "Error parsing API response: \(detail)"
             case .statusCode(let code):
@@ -114,7 +114,7 @@ public enum WoquError: Error, LocalizedError {
             }
         }
         case notInitialized
-        case invalidResponse
+        case invalidResponse(String)
         case parsingError(String)
         case statusCode(Int)
         case providerNotSupported(String)

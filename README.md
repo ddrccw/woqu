@@ -64,7 +64,7 @@ providers:
 ## TODO
 
 - [x] bash support ✔️
-- [ ] fish support
+- [x] fish support ✔️
 - [ ] tcsh support
 - [ ] Cross-platform support (Linux/Windows WSL)
 - [ ] `woqu config` interactive configuration command
@@ -74,4 +74,3 @@ providers:
 ## License
 
 This code repository is licensed under [ the MIT License ](https://opensource.org/licenses/MIT).
-git clone https://github.com/ddrccw

@@ -25,8 +25,8 @@ actor OpenAIService: APIService {
             "temperature": provider.temperature,
         ]
 
-        if provider.name != .siliconflow {
-            // siliconflow not support
+        if ![.siliconflow, .alibaba].contains(provider.name) {
+            // some providers do not support response_format well
             parameters["response_format"] = ["type": "json_object"]
         }
 
@@ -40,15 +40,19 @@ actor OpenAIService: APIService {
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw WoquError.apiError(.invalidResponse)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw WoquError.apiError(.invalidResponse("invalid response"))
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            throw WoquError.apiError(.statusCode(httpResponse.statusCode))
         }
 
         // Validate and parse the response
         guard let resp = OpenAIResponse(data: data),
               !resp.choices.isEmpty else {
-            throw WoquError.apiError(.invalidResponse)
+            let dataStr = String(data: data, encoding: .utf8) ?? ""
+            throw WoquError.apiError(.invalidResponse(dataStr))
         }
 
         let suggestion = resp.choices[0].message.content

@@ -22,8 +22,7 @@ public class ZshShell: Shell {
         return ""
     }
 
-
-    public override func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
+    private func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
         // Zsh history format: ": <timestamp>:<seconds>;<command>"
         let components = line.components(separatedBy: ";")
         guard components.count == 2 else { return nil }

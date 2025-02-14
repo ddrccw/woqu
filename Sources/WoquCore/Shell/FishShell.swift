@@ -23,20 +23,29 @@ public class FishShell: Shell {
             throw WoquError.initError(.shellNotFound(fishPath))
         }
         self.fishPath = fishPath
+        Logger.debug("Fish path: \(fishPath)")
     }
 
-    public override func parseHistoryLine(_ line: String) -> (timestamp: Date, command: String)? {
+    public func parseHistoryLines() throws -> [(timestamp: Date, command: String)] {
         // Fish history is yaml formatted:
         // - cmd: command
         //   when: Unix timestamp
         //   paths: related file paths (optional)
-        guard let yaml = try? Yams.load(yaml: line) as? [String: Any],
-              let command = yaml["cmd"] as? String,
-              let timestamp = yaml["when"] as? Double else {
-            return nil
-        }
+        let historyContent = try String(contentsOfFile: historyFilePath, encoding: .utf8)
+        let yaml = try Yams.load(yaml: historyContent) as? [Dictionary<String, Any>] ?? []
+        var historyLines: [(timestamp: Date, command: String)] = []
+        for dict in yaml {
+            guard let cmd = dict["cmd"] as? String else {
+                continue
+            }
+            guard let when = dict["when"] as? Int else {
+                continue
+            }
 
-        return (Date(timeIntervalSince1970: timestamp), command)
+            let timestamp = Date(timeIntervalSince1970: Double(when))
+            historyLines.append((timestamp, cmd))
+        }
+        return historyLines
     }
 
     public override func getCommandHistory(_ command: String?) -> [CommandHistory] {
@@ -47,14 +56,15 @@ public class FishShell: Shell {
                     (Date.now, command)
                 ]
             } else {
-                let historyContent = try String(contentsOfFile: historyFilePath, encoding: .utf8)
-                let allCommandHistory = historyContent.components(separatedBy: "\n")
+                let allCommandHistory = try parseHistoryLines()
                 allCommands = allCommandHistory
-                    .compactMap { line in
-                        guard let (timestamp, command) = parseHistoryLine(line),
-                              command.contains("woqu") == false else {
+                    .compactMap { (timestamp, command) in
+                        guard command.contains("woqu") == false else {
+                            // Logger.debug("filtered history cmd: \(command)")
                             return nil
                         }
+
+                        // Logger.debug("history cmd: \(command)")
                         return (timestamp, command)
                     }.suffix(10)
             }
